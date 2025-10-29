@@ -114,7 +114,7 @@ class DiscordLogger:
             raise RuntimeError(f"Channel {self.log_channel_id} not found")
 
         # Create a new thread in the channel
-        self._log_thread = await channel.create_thread( # type: ignore
+        self._log_thread = await channel.create_thread(  # type: ignore
             name=self.log_thread_name,
             auto_archive_duration=10080,  # 1 week in minutes
             type=discord.ChannelType.public_thread,
@@ -220,7 +220,7 @@ class DiscordLogger:
         # Wait for reaction
         def check(reaction, user):
             return (
-                user != self._client.user # type: ignore
+                user != self._client.user  # type: ignore
                 and reaction.message.id == sent_message.id
                 and str(reaction.emoji) in emojis
             )
@@ -399,7 +399,7 @@ class DiscordLogger:
             return
 
         try:
-            voice_channel = self._client.get_channel(self.voice_channel_id) # type: ignore
+            voice_channel = self._client.get_channel(self.voice_channel_id)  # type: ignore
             if voice_channel is None:
                 print(
                     f"Warning: Voice channel {self.voice_channel_id} not found. Skipping auto-connect."
@@ -460,7 +460,7 @@ class DiscordLogger:
             return
 
         # Get voice channel
-        voice_channel = self._client.get_channel(voice_channel_id) # type: ignore
+        voice_channel = self._client.get_channel(voice_channel_id)  # type: ignore
         if voice_channel is None:
             await message.reply(
                 f"❌ Voice channel with ID `{voice_channel_id}` not found."
@@ -469,7 +469,7 @@ class DiscordLogger:
 
         if not isinstance(voice_channel, discord.VoiceChannel):
             await message.reply(
-                f"❌ Channel `{voice_channel.name}` is not a voice channel." # type: ignore
+                f"❌ Channel `{voice_channel.name}` is not a voice channel."  # type: ignore
             )
             return
 
