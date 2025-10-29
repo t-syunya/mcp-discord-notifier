@@ -1,7 +1,5 @@
 """VoiceVox API client for text-to-speech conversion."""
 
-import asyncio
-import io
 from typing import Optional
 
 import httpx

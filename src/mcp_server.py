@@ -1,7 +1,6 @@
 """MCP server implementation for conversation logging."""
 
 from typing import Optional, List
-import json
 
 from mcp.server import Server
 from mcp.types import Tool, TextContent

@@ -1,7 +1,6 @@
 """Discord logger implementation using discord.py."""
 
 import asyncio
-import io
 import os
 import tempfile
 from datetime import datetime
