@@ -3,13 +3,13 @@
 import asyncio
 import os
 import tempfile
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
 
 import discord
 from discord import Intents, Thread, Message, VoiceClient, FFmpegPCMAudio
 
-from .voicevox_client import VoiceVoxClient
+from .voicevox_client import VoiceVoxClient  # type: ignore
 
 
 class DiscordLogger:
@@ -53,14 +53,14 @@ class DiscordLogger:
         @self._client.event
         async def on_ready():
             """Called when the Discord client is ready."""
-            print(f"Discord client logged in as {self._client.user}")
+            print(f"Discord client logged in as {self._client.user}")  # type: ignore
             self._ready_event.set()
 
         @self._client.event
         async def on_message(message: Message):
             """Handle incoming Discord messages for voice commands."""
             # Ignore messages from the bot itself
-            if message.author == self._client.user:
+            if message.author == self._client.user:  # type: ignore
                 return
 
             # Only process messages in the log channel
@@ -114,7 +114,7 @@ class DiscordLogger:
             raise RuntimeError(f"Channel {self.log_channel_id} not found")
 
         # Create a new thread in the channel
-        self._log_thread = await channel.create_thread(
+        self._log_thread = await channel.create_thread( # type: ignore
             name=self.log_thread_name,
             auto_archive_duration=10080,  # 1 week in minutes
             type=discord.ChannelType.public_thread,
@@ -151,7 +151,7 @@ class DiscordLogger:
             title=f"💬 {role.upper()}",
             description=message,
             color=color,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
         )
 
         if context:
@@ -191,7 +191,7 @@ class DiscordLogger:
             title="🤔 WAITING FOR INPUT",
             description=message,
             color=0xF39C12,  # Orange
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
         )
 
         # Add options to embed
@@ -220,7 +220,7 @@ class DiscordLogger:
         # Wait for reaction
         def check(reaction, user):
             return (
-                user != self._client.user
+                user != self._client.user # type: ignore
                 and reaction.message.id == sent_message.id
                 and str(reaction.emoji) in emojis
             )
@@ -251,7 +251,7 @@ class DiscordLogger:
                 title="⏱️ TIMEOUT",
                 description=f"No response received within {timeout} seconds",
                 color=0x95A5A6,  # Gray
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(timezone.utc),
             )
             await sent_message.edit(embed=timeout_embed)
             raise
@@ -290,7 +290,7 @@ class DiscordLogger:
             title="🔊 VOICE NOTIFICATION",
             description=message,
             color=0xE74C3C if priority == "high" else 0x3498DB,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
         )
         embed.add_field(name="Priority", value=priority.upper(), inline=True)
 
@@ -375,7 +375,7 @@ class DiscordLogger:
                 title="❌ VOICE NOTIFICATION FAILED",
                 description=f"Error: {str(e)}",
                 color=0xE74C3C,
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(timezone.utc),
             )
             error_embed.add_field(
                 name="Voice Channel", value=voice_channel_name, inline=True
@@ -399,7 +399,7 @@ class DiscordLogger:
             return
 
         try:
-            voice_channel = self._client.get_channel(self.voice_channel_id)
+            voice_channel = self._client.get_channel(self.voice_channel_id) # type: ignore
             if voice_channel is None:
                 print(
                     f"Warning: Voice channel {self.voice_channel_id} not found. Skipping auto-connect."
@@ -460,7 +460,7 @@ class DiscordLogger:
             return
 
         # Get voice channel
-        voice_channel = self._client.get_channel(voice_channel_id)
+        voice_channel = self._client.get_channel(voice_channel_id) # type: ignore
         if voice_channel is None:
             await message.reply(
                 f"❌ Voice channel with ID `{voice_channel_id}` not found."
@@ -469,7 +469,7 @@ class DiscordLogger:
 
         if not isinstance(voice_channel, discord.VoiceChannel):
             await message.reply(
-                f"❌ Channel `{voice_channel.name}` is not a voice channel."
+                f"❌ Channel `{voice_channel.name}` is not a voice channel." # type: ignore
             )
             return
 

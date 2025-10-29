@@ -4,9 +4,9 @@ import asyncio
 import os
 import sys
 
-from .discord_logger import DiscordLogger
-from .mcp_server import ConversationLoggerServer
-from .settings import get_settings
+from .discord_logger import DiscordLogger  # type: ignore
+from .mcp_server import ConversationLoggerServer  # type: ignore
+from .settings import get_settings  # type: ignore
 
 
 async def main() -> None:

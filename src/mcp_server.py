@@ -6,7 +6,7 @@ from mcp.server import Server
 from mcp.types import Tool, TextContent
 from pydantic import BaseModel, Field
 
-from .discord_logger import DiscordLogger
+from .discord_logger import DiscordLogger  # type: ignore
 
 
 class LogConversationRequest(BaseModel):
