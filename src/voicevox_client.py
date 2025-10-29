@@ -69,9 +69,7 @@ class VoiceVoxClient:
             response.raise_for_status()
             return response.json()
 
-    async def synthesize(
-        self, audio_query: dict, speaker_id: int = 1
-    ) -> bytes:
+    async def synthesize(self, audio_query: dict, speaker_id: int = 1) -> bytes:
         """Synthesize speech from audio query.
 
         Args:
@@ -99,9 +97,7 @@ class VoiceVoxClient:
             response.raise_for_status()
             return response.content
 
-    async def text_to_speech(
-        self, text: str, speaker_id: int = 1
-    ) -> bytes:
+    async def text_to_speech(self, text: str, speaker_id: int = 1) -> bytes:
         """Convert text to speech in one call.
 
         Args:

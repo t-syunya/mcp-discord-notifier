@@ -122,9 +122,7 @@ class DiscordLogger:
 
         return self._log_thread
 
-    async def log(
-        self, role: str, message: str, context: Optional[str] = None
-    ) -> None:
+    async def log(self, role: str, message: str, context: Optional[str] = None) -> None:
         """Log a message to Discord.
 
         Args:
@@ -299,9 +297,7 @@ class DiscordLogger:
         # Check if connected to voice channel
         if not self._voice_client or not self._voice_client.is_connected():
             embed.add_field(
-                name="Status",
-                value="⚠️ Not connected to voice channel",
-                inline=False
+                name="Status", value="⚠️ Not connected to voice channel", inline=False
             )
             embed.set_footer(text="Use !join <voice_channel_id> to connect")
             await thread.send(embed=embed)
@@ -318,9 +314,7 @@ class DiscordLogger:
         # Check if VoiceVox is available
         if self._voicevox is None or not await self._voicevox.is_available():
             embed.add_field(
-                name="Status",
-                value="⚠️ VoiceVox not available",
-                inline=False
+                name="Status", value="⚠️ VoiceVox not available", inline=False
             )
             embed.set_footer(text="VoiceVox Engine is not running")
             await thread.send(embed=embed)
@@ -336,17 +330,13 @@ class DiscordLogger:
 
         try:
             # Generate TTS audio using VoiceVox
-            embed.add_field(
-                name="Status", value="🎵 Generating audio...", inline=False
-            )
+            embed.add_field(name="Status", value="🎵 Generating audio...", inline=False)
             status_msg = await thread.send(embed=embed)
 
             audio_data = await self._voicevox.text_to_speech(message, speaker_id)
 
             # Save to temporary file
-            with tempfile.NamedTemporaryFile(
-                suffix=".wav", delete=False
-            ) as temp_file:
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
                 temp_file.write(audio_data)
                 audio_file_path = temp_file.name
 
@@ -367,9 +357,7 @@ class DiscordLogger:
                 await asyncio.sleep(0.1)
 
             # Update status
-            embed.set_field_at(
-                2, name="Status", value="✅ Completed", inline=False
-            )
+            embed.set_field_at(2, name="Status", value="✅ Completed", inline=False)
             embed.set_footer(text=f"Speaker ID: {speaker_id}")
             await status_msg.edit(embed=embed)
 
@@ -413,15 +401,21 @@ class DiscordLogger:
         try:
             voice_channel = self._client.get_channel(self.voice_channel_id)
             if voice_channel is None:
-                print(f"Warning: Voice channel {self.voice_channel_id} not found. Skipping auto-connect.")
+                print(
+                    f"Warning: Voice channel {self.voice_channel_id} not found. Skipping auto-connect."
+                )
                 return
 
             if not isinstance(voice_channel, discord.VoiceChannel):
-                print(f"Warning: Channel {self.voice_channel_id} is not a voice channel. Skipping auto-connect.")
+                print(
+                    f"Warning: Channel {self.voice_channel_id} is not a voice channel. Skipping auto-connect."
+                )
                 return
 
             self._voice_client = await voice_channel.connect()
-            print(f"Auto-connected to voice channel: {voice_channel.name} (ID: {self.voice_channel_id})")
+            print(
+                f"Auto-connected to voice channel: {voice_channel.name} (ID: {self.voice_channel_id})"
+            )
 
         except Exception as e:
             print(f"Warning: Failed to auto-connect to voice channel: {e}")
@@ -451,7 +445,9 @@ class DiscordLogger:
             try:
                 voice_channel_id = int(parts[1])
             except ValueError:
-                await message.reply("❌ Invalid voice channel ID. Please provide a numeric ID.")
+                await message.reply(
+                    "❌ Invalid voice channel ID. Please provide a numeric ID."
+                )
                 return
 
         # Check if already connected
@@ -466,11 +462,15 @@ class DiscordLogger:
         # Get voice channel
         voice_channel = self._client.get_channel(voice_channel_id)
         if voice_channel is None:
-            await message.reply(f"❌ Voice channel with ID `{voice_channel_id}` not found.")
+            await message.reply(
+                f"❌ Voice channel with ID `{voice_channel_id}` not found."
+            )
             return
 
         if not isinstance(voice_channel, discord.VoiceChannel):
-            await message.reply(f"❌ Channel `{voice_channel.name}` is not a voice channel.")
+            await message.reply(
+                f"❌ Channel `{voice_channel.name}` is not a voice channel."
+            )
             return
 
         # Connect to voice channel
@@ -481,7 +481,9 @@ class DiscordLogger:
                 f"Voice notifications will now be played in this channel.\n"
                 f"Use `!leave` to disconnect."
             )
-            print(f"Connected to voice channel: {voice_channel.name} (ID: {voice_channel_id})")
+            print(
+                f"Connected to voice channel: {voice_channel.name} (ID: {voice_channel_id})"
+            )
 
         except Exception as e:
             await message.reply(f"❌ Failed to connect to voice channel: {str(e)}")
@@ -502,7 +504,9 @@ class DiscordLogger:
         try:
             await self._voice_client.disconnect()
             self._voice_client = None
-            await message.reply(f"✅ Disconnected from voice channel: **{channel_name}**")
+            await message.reply(
+                f"✅ Disconnected from voice channel: **{channel_name}**"
+            )
             print(f"Disconnected from voice channel: {channel_name}")
 
         except Exception as e:

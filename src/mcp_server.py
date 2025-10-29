@@ -30,9 +30,7 @@ class WaitForReactionRequest(BaseModel):
     options: List[str] = Field(
         description="List of reaction options (e.g., ['✅ Approve', '❌ Reject'])"
     )
-    timeout: int = Field(
-        default=300, description="Timeout in seconds (default: 300)"
-    )
+    timeout: int = Field(default=300, description="Timeout in seconds (default: 300)")
     context: Optional[str] = Field(
         default=None, description="Optional context or metadata"
     )
@@ -44,16 +42,13 @@ class NotifyVoiceRequest(BaseModel):
     voice_channel_id: int = Field(
         description="ID of the voice channel to send notification to"
     )
-    message: str = Field(
-        description="Message to announce in the voice channel"
-    )
+    message: str = Field(description="Message to announce in the voice channel")
     priority: str = Field(
         default="normal",
-        description="Priority level: 'normal' or 'high' (default: 'normal')"
+        description="Priority level: 'normal' or 'high' (default: 'normal')",
     )
     speaker_id: int = Field(
-        default=1,
-        description="VoiceVox speaker ID (default: 1 = 四国めたん ノーマル)"
+        default=1, description="VoiceVox speaker ID (default: 1 = 四国めたん ノーマル)"
     )
 
 
@@ -134,7 +129,10 @@ class ConversationLoggerServer:
                 # Wait for user reaction
                 try:
                     result = await self.discord_logger.wait_for_reaction(
-                        request.message, request.options, request.timeout, request.context
+                        request.message,
+                        request.options,
+                        request.timeout,
+                        request.context,
                     )
                     return [
                         TextContent(
@@ -155,14 +153,14 @@ class ConversationLoggerServer:
                         request.voice_channel_id,
                         request.message,
                         request.priority,
-                        request.speaker_id
+                        request.speaker_id,
                     )
                     # Build response message
-                    if result['status'] == 'played':
+                    if result["status"] == "played":
                         response_text = f"Voice notification played in {result['voice_channel']} (Speaker: {result['speaker_id']})"
                     else:
                         response_text = f"Voice notification sent to {result['voice_channel']} ({result['status']})"
-                        if 'note' in result:
+                        if "note" in result:
                             response_text += f". {result['note']}"
 
                     return [
