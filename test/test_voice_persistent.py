@@ -14,9 +14,9 @@ async def test_persistent_voice():
     # Load settings
     settings = get_settings()
 
-    print("="*50)
+    print("=" * 50)
     print("Testing Persistent Voice Connection")
-    print("="*50)
+    print("=" * 50)
     print()
     print("Instructions:")
     print("1. Start the MCP server with: ./scripts/start.sh")
@@ -27,7 +27,7 @@ async def test_persistent_voice():
     print("5. The bot will play audio WITHOUT disconnecting")
     print("6. Use !leave in Discord to disconnect when done")
     print()
-    print("="*50)
+    print("=" * 50)
     print()
 
     logger = DiscordLogger(
@@ -88,6 +88,7 @@ async def test_persistent_voice():
     except Exception as e:
         print(f"\n❌ Error: {e}")
         import traceback
+
         traceback.print_exc()
 
     finally:

@@ -85,9 +85,12 @@ class TestVoiceVoxClient:
     @pytest.mark.asyncio
     async def test_text_to_speech_success(self, client):
         """Test text_to_speech complete pipeline."""
-        with patch.object(client, "create_audio_query", new_callable=AsyncMock) as mock_query, \
-             patch.object(client, "synthesize", new_callable=AsyncMock) as mock_synth:
-
+        with (
+            patch.object(
+                client, "create_audio_query", new_callable=AsyncMock
+            ) as mock_query,
+            patch.object(client, "synthesize", new_callable=AsyncMock) as mock_synth,
+        ):
             mock_query.return_value = {"query": "data"}
             mock_synth.return_value = b"audio-data"
 
@@ -100,9 +103,12 @@ class TestVoiceVoxClient:
     @pytest.mark.asyncio
     async def test_text_to_speech_different_speaker(self, client):
         """Test text_to_speech with different speaker ID."""
-        with patch.object(client, "create_audio_query", new_callable=AsyncMock) as mock_query, \
-             patch.object(client, "synthesize", new_callable=AsyncMock) as mock_synth:
-
+        with (
+            patch.object(
+                client, "create_audio_query", new_callable=AsyncMock
+            ) as mock_query,
+            patch.object(client, "synthesize", new_callable=AsyncMock) as mock_synth,
+        ):
             mock_query.return_value = {"query": "data"}
             mock_synth.return_value = b"audio-data"
 

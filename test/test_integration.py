@@ -72,7 +72,7 @@ class TestIntegration:
 
     @pytest.mark.skipif(
         "VOICE_CHANNEL_ID" not in __import__("os").environ,
-        reason="VOICE_CHANNEL_ID not set"
+        reason="VOICE_CHANNEL_ID not set",
     )
     @pytest.mark.asyncio
     async def test_auto_connect_voice(self):
@@ -134,11 +134,11 @@ class TestManualInteraction:
             await logger.start()
             await asyncio.sleep(3)
 
-            print("\n" + "="*60)
+            print("\n" + "=" * 60)
             print("MANUAL TEST: Please react to the message in Discord!")
             print("Options: ✅ (approve) or ❌ (reject)")
             print("You have 60 seconds...")
-            print("="*60 + "\n")
+            print("=" * 60 + "\n")
 
             result = await logger.wait_for_reaction(
                 message="🧪 **INTEGRATION TEST**: Please react to this message!",
@@ -182,10 +182,10 @@ class TestManualInteraction:
             await logger.start()
             await asyncio.sleep(5)  # Wait for auto-connect
 
-            print("\n" + "="*60)
+            print("\n" + "=" * 60)
             print("MANUAL TEST: Listen for voice notification!")
             print("You should hear: 'インテグレーションテストです'")
-            print("="*60 + "\n")
+            print("=" * 60 + "\n")
 
             result = await logger.notify_voice(
                 voice_channel_id=settings.voice_channel_id,
@@ -196,7 +196,11 @@ class TestManualInteraction:
 
             print(f"\n✅ Voice notification sent: {result['status']}\n")
 
-            assert result["status"] in ["played", "not_connected", "voicevox_unavailable"]
+            assert result["status"] in [
+                "played",
+                "not_connected",
+                "voicevox_unavailable",
+            ]
 
             # Wait a bit for audio to finish
             await asyncio.sleep(3)

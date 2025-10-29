@@ -15,9 +15,7 @@ class TestMCPServerModels:
     def test_log_conversation_request_valid(self):
         """Test LogConversationRequest with valid data."""
         request = LogConversationRequest(
-            role="human",
-            message="Test message",
-            context="test-context"
+            role="human", message="Test message", context="test-context"
         )
 
         assert request.role == "human"
@@ -26,10 +24,7 @@ class TestMCPServerModels:
 
     def test_log_conversation_request_without_context(self):
         """Test LogConversationRequest without optional context."""
-        request = LogConversationRequest(
-            role="assistant",
-            message="Test response"
-        )
+        request = LogConversationRequest(role="assistant", message="Test response")
 
         assert request.role == "assistant"
         assert request.message == "Test response"
@@ -38,9 +33,7 @@ class TestMCPServerModels:
     def test_wait_for_reaction_request_valid(self):
         """Test WaitForReactionRequest with valid data."""
         request = WaitForReactionRequest(
-            message="Confirm?",
-            options=["✅ Yes", "❌ No"],
-            timeout=300
+            message="Confirm?", options=["✅ Yes", "❌ No"], timeout=300
         )
 
         assert request.message == "Confirm?"
@@ -49,10 +42,7 @@ class TestMCPServerModels:
 
     def test_wait_for_reaction_request_default_timeout(self):
         """Test WaitForReactionRequest uses default timeout."""
-        request = WaitForReactionRequest(
-            message="Confirm?",
-            options=["✅ Yes"]
-        )
+        request = WaitForReactionRequest(message="Confirm?", options=["✅ Yes"])
 
         assert request.timeout == 300  # Default value
 
@@ -62,7 +52,7 @@ class TestMCPServerModels:
             voice_channel_id=123456789,
             message="Test notification",
             priority="high",
-            speaker_id=3
+            speaker_id=3,
         )
 
         assert request.voice_channel_id == 123456789
@@ -72,10 +62,7 @@ class TestMCPServerModels:
 
     def test_notify_voice_request_defaults(self):
         """Test NotifyVoiceRequest uses default values."""
-        request = NotifyVoiceRequest(
-            voice_channel_id=123456789,
-            message="Test"
-        )
+        request = NotifyVoiceRequest(voice_channel_id=123456789, message="Test")
 
         assert request.priority == "normal"  # Default
         assert request.speaker_id == 1  # Default

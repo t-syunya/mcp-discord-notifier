@@ -51,7 +51,9 @@ class TestDiscordLogger:
         logger._log_thread = mock_thread
 
         # Patch _ensure_thread to return the mock thread
-        with patch.object(logger, "_ensure_thread", new_callable=AsyncMock, return_value=mock_thread):
+        with patch.object(
+            logger, "_ensure_thread", new_callable=AsyncMock, return_value=mock_thread
+        ):
             await logger.log("human", "Test message", "test-context")
 
             # Verify send was called
@@ -73,7 +75,9 @@ class TestDiscordLogger:
         mock_thread = MagicMock()
         mock_thread.send = AsyncMock()
 
-        with patch.object(logger, "_ensure_thread", new_callable=AsyncMock, return_value=mock_thread):
+        with patch.object(
+            logger, "_ensure_thread", new_callable=AsyncMock, return_value=mock_thread
+        ):
             await logger.log("assistant", "Test response", None)
 
             mock_thread.send.assert_awaited_once()
@@ -91,7 +95,9 @@ class TestDiscordLogger:
         mock_thread = MagicMock()
         mock_thread.send = AsyncMock()
 
-        with patch.object(logger, "_ensure_thread", new_callable=AsyncMock, return_value=mock_thread):
+        with patch.object(
+            logger, "_ensure_thread", new_callable=AsyncMock, return_value=mock_thread
+        ):
             await logger.log("system", "System message", None)
 
             mock_thread.send.assert_awaited_once()
@@ -105,7 +111,9 @@ class TestDiscordLogger:
         """Test that logging fails when client is not ready."""
         logger._client = None
 
-        with pytest.raises(RuntimeError, match="The connection with Discord is not ready"):
+        with pytest.raises(
+            RuntimeError, match="The connection with Discord is not ready"
+        ):
             await logger.log("human", "Test", None)
 
     @pytest.mark.asyncio
@@ -125,16 +133,17 @@ class TestDiscordLogger:
         # Simulate timeout
         async def wait_for_side_effect(*args, **kwargs):
             import asyncio
+
             raise asyncio.TimeoutError()
 
         logger._client.wait_for = AsyncMock(side_effect=wait_for_side_effect)
 
-        with patch.object(logger, "_ensure_thread", new_callable=AsyncMock, return_value=mock_thread):
+        with patch.object(
+            logger, "_ensure_thread", new_callable=AsyncMock, return_value=mock_thread
+        ):
             with pytest.raises(asyncio.TimeoutError):
                 await logger.wait_for_reaction(
-                    message="Test?",
-                    options=["✅ Yes", "❌ No"],
-                    timeout=1
+                    message="Test?", options=["✅ Yes", "❌ No"], timeout=1
                 )
 
     @pytest.mark.asyncio
@@ -147,7 +156,9 @@ class TestDiscordLogger:
         mock_thread = MagicMock()
         mock_thread.send = AsyncMock()
 
-        with patch.object(logger, "_ensure_thread", new_callable=AsyncMock, return_value=mock_thread):
+        with patch.object(
+            logger, "_ensure_thread", new_callable=AsyncMock, return_value=mock_thread
+        ):
             result = await logger.notify_voice(
                 voice_channel_id=123,
                 message="Test",
