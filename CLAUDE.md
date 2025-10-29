@@ -1,0 +1,394 @@
+# CLAUDE.md
+
+このファイルは、このリポジトリで作業する際にAI開発アシスタント（Claude Code、Cursor、Codex等）にガイダンスを提供します。
+
+## プロジェクト概要
+
+Discord Conversation Loggerは、AI開発アシスタント（Cursor、Codex、Claude Code等）がDiscordを通じてユーザーとインタラクティブにコミュニケーションするためのMCP（Model Context Protocol）サーバーです。
+
+### 主な目的
+
+1. **リアルタイム通知**: AIエージェントが進行状況や質問をDiscordに送信
+2. **インタラクティブフィードバック**: Discordのリアクションによって作業続行の可否を決定
+3. **ボイスチャンネル統合**（計画中）: ボイスチャンネルに参加し、重要なイベントや応答待ち状態を音声で通知
+
+### 技術スタック
+
+- **言語**: Python 3.12+
+- **Discord統合**: discord.py（voice対応）
+- **MCP**: mcp Python SDK
+- **非同期処理**: asyncio
+- **パッケージ管理**: uv
+
+### 開発状況
+
+- ✅ 基本的なメッセージロギング機能
+- ✅ カラーコード付き埋め込みメッセージ
+- ✅ スレッド自動作成
+- ✅ リアクションベースのワークフロー制御（`wait_for_reaction`ツール）
+- ✅ ボイスチャンネル統合（基本実装、TTS未実装）
+- 🚧 音声通知機能（プレースホルダー実装、完全なTTS統合は今後）
+
+## コマンド
+
+### 開発とインストール
+
+**uv使用（推奨）:**
+```bash
+# プロジェクトのセットアップ（依存関係のインストールと仮想環境の作成）
+uv sync
+
+# ローカルで実行（環境変数または引数が必要）
+uv run mcp-discord-notifier --log-channel-id YOUR_CHANNEL_ID --log-thread-name "Conversation Log"
+
+# または仮想環境をアクティベート
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+mcp-discord-notifier --log-channel-id YOUR_CHANNEL_ID
+
+# 環境変数を使用して実行
+export DISCORD_TOKEN="your-bot-token"
+export LOG_CHANNEL_ID="your-channel-id"
+export LOG_THREAD_NAME="Conversation Log"
+uv run mcp-discord-notifier
+
+```
+
+**pip使用（従来の方法）:**
+```bash
+# 開発モードでインストール
+pip install -e .
+```
+
+### テストとリント
+
+**テスト実行:**
+```bash
+# ユニットテストを実行（推奨）
+uv run pytest test/ -m "not integration and not manual" -v
+
+# 統合テストを含む全テスト実行（手動テスト除く）
+uv run pytest test/ -m "not manual" -v
+
+# カバレッジ付きで実行
+uv run pytest test/ -m "not manual" --cov=src --cov-report=html
+```
+
+**テスト結果:**
+```
+✅ ユニットテスト:           32 passed (100%)
+✅ 統合テスト (自動実行可能):  4 passed, 1 skipped
+✅ 全テスト (手動除く):      36 passed, 1 skipped
+```
+
+詳細は [test/README.md](test/README.md) を参照。
+
+**リント・フォーマット:**
+```bash
+# 型チェック（mypy がインストールされている場合）
+uv run mypy src
+
+# コードをフォーマット（black がインストールされている場合）
+uv run black src
+
+# リント（ruff がインストールされている場合）
+uv run ruff check src
+```
+
+## アーキテクチャ
+
+### モジュール構成
+
+#### 現在の実装
+
+コードベースは3つの主要なモジュールで構成されています：
+
+1. **__main__.py** - エントリーポイントとMCPサーバーの初期化
+   - argparseを使用してコマンドライン引数を解析（環境変数もサポート）
+   - スレッド名に現在の作業ディレクトリを自動的に追加
+   - asyncioを使用してDiscordクライアントとMCPサーバーを並行実行
+
+2. **discord_logger.py** - Discordクライアントとロギング実装
+   - `DiscordLogger`: discord.pyを使用したDiscord統合
+   - 準備完了時にDiscordクライアントを初期化
+   - スレッド管理: 最初のログメッセージで遅延的にスレッドを作成
+   - 色分けされた埋め込み: human（青）、assistant（緑）、system（グレー）
+   - リアクションベースのフィードバック機能
+
+3. **mcp_server.py** - MCPプロトコル統合
+   - `ConversationLoggerServer`: `log_conversation`ツールを持つMCPサーバーハンドラー
+   - Pydanticモデルを使用したリクエストバリデーション
+   - MCP Python SDKを使用したプロトコル処理
+
+#### 今後追加予定のモジュール
+
+4. **voice_notifier.py**（計画中） - ボイスチャンネル統合
+   - ボイスチャンネル接続管理
+   - 音声合成（TTS）による通知
+   - 重要イベントの音声アナウンス
+   - ユーザー応答待ち状態の通知
+
+### 主要な設計パターン
+
+- **クラスベース設計**: クラスにより異なるロギングバックエンドが可能（現在はDiscordのみ）
+- **遅延初期化**: Discordスレッドは初回使用時に作成
+- **非同期処理**: asyncio/awaitを使用した非同期実行
+- **並行ランタイム**: DiscordクライアントとMCPサーバーが並行実行
+
+### 設定
+
+アプリケーションは以下の方法で設定を受け取ります：
+1. コマンドライン引数: `--discord-token`、`--log-channel-id`、`--log-thread-name`
+2. 環境変数: `DISCORD_TOKEN`、`LOG_CHANNEL_ID`、`LOG_THREAD_NAME`
+3. セットアップ用のヘルパースクリプト:
+   - `setup-discord-env.sh`: 設定テンプレートを`~/.claude/discord-config.json`にコピー
+   - `load-discord-env.sh`: JSONから設定を読み込み環境変数としてエクスポート（`jq`が必要）
+
+## MCP統合
+
+### 現在のツール
+
+#### log_conversation
+
+メッセージをDiscordに送信するための基本ツール：
+
+```json
+{
+  "role": "human" | "assistant" | "system",
+  "message": "メッセージ内容",
+  "context": "オプションのコンテキストメタデータ"
+}
+```
+
+**使用例:**
+- 作業開始/完了の通知
+- ユーザーへの質問
+- エラーや警告の報告
+- 進捗状況の更新
+
+#### wait_for_reaction
+
+送信したメッセージへのリアクションを待ち、ユーザーのフィードバックに基づいて処理を継続：
+
+```json
+{
+  "message": "確認メッセージ",
+  "options": ["✅ 承認", "❌ 拒否", "⏸️ 一時停止"],
+  "timeout": 300,  // 秒（デフォルト: 300）
+  "context": "オプションのコンテキスト"
+}
+```
+
+**使用例:**
+- 重要な変更前のユーザー承認
+- 複数の選択肢からの意思決定
+- 処理の一時停止/継続の判断
+- デプロイやリリース前の最終確認
+
+**戻り値:**
+```json
+{
+  "emoji": "✅",
+  "option": "✅ 承認",
+  "user": "ユーザー名#1234",
+  "message_id": 123456789
+}
+```
+
+#### notify_voice
+
+ボイスチャンネルで音声通知を行う：
+
+```json
+{
+  "voice_channel_id": 123456789,
+  "message": "音声で読み上げるメッセージ",
+  "priority": "normal",  // "normal" または "high"
+  "speaker_id": 1  // VoiceVoxスピーカーID（デフォルト: 1 = 四国めたん ノーマル）
+}
+```
+
+**使用例:**
+- 長時間タスクの完了通知
+- 緊急の問題やエラーの通知
+- ユーザーが離席中の重要な更新
+
+**VoiceVox統合:**
+- VoiceVox Engineがhttp://localhost:50021で利用可能な場合、実際のTTSを使用
+- VoiceVoxが利用できない場合、テキストチャンネルへのログにフォールバック
+- Dockerで簡単にセットアップ可能（`docker-compose up -d`）
+
+**スピーカーID一覧（主要なもの）:**
+- 1: 四国めたん（ノーマル）
+- 3: ずんだもん（ノーマル）
+- 8: 春日部つむぎ（ノーマル）
+- 他多数（VoiceVox APIで確認可能）
+
+### 各AI開発アシスタントへの追加方法
+
+#### Claude Code
+
+```bash
+# 設定から環境変数を読み込み
+source ./load-discord-env.sh
+
+# MCPサーバーをグローバルに追加
+claude mcp add -s user mcp-discord-notifier mcp-discord-notifier \
+  -e DISCORD_TOKEN="$DISCORD_TOKEN" \
+  -- --log-channel-id "$LOG_CHANNEL_ID" --log-thread-name "$LOG_THREAD_NAME"
+
+# または現在のプロジェクトにローカルで追加
+claude mcp add mcp-discord-notifier mcp-discord-notifier \
+  -e DISCORD_TOKEN="$DISCORD_TOKEN" \
+  -- --log-channel-id "$LOG_CHANNEL_ID" --log-thread-name "$LOG_THREAD_NAME"
+```
+
+#### Cursor / その他のMCP対応エディタ
+
+MCP設定ファイル（通常は`~/.cursor/mcp.json`または`~/.claude.json`）に以下を追加：
+
+```json
+{
+  "mcpServers": {
+    "mcp-discord-notifier": {
+      "command": "mcp-discord-notifier",
+      "args": [
+        "--log-channel-id", "YOUR_CHANNEL_ID",
+        "--log-thread-name", "AI Conversation Log"
+      ],
+      "env": {
+        "DISCORD_TOKEN": "YOUR_DISCORD_BOT_TOKEN"
+      }
+    }
+  }
+}
+```
+
+または環境変数を使用：
+
+```json
+{
+  "mcpServers": {
+    "mcp-discord-notifier": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "source ~/.claude/load-discord-env.sh && mcp-discord-notifier --log-channel-id \"$LOG_CHANNEL_ID\" --log-thread-name \"$LOG_THREAD_NAME\""
+      ]
+    }
+  }
+}
+```
+
+#### Codex（OpenAI）
+
+CodexはMCPをサポートしています。設定は`~/.codex/config.toml`に保存され、CLIとIDE拡張機能の両方で共有されます。
+
+**方法1: CLIを使用（推奨）**
+
+```bash
+# 設定から環境変数を読み込み
+source ./load-discord-env.sh
+
+# MCPサーバーを追加
+codex mcp add mcp-discord-notifier \
+  --env DISCORD_TOKEN="$DISCORD_TOKEN" \
+  --env LOG_CHANNEL_ID="$LOG_CHANNEL_ID" \
+  --env LOG_THREAD_NAME="$LOG_THREAD_NAME" \
+  -- mcp-discord-notifier
+```
+
+**方法2: config.tomlを直接編集**
+
+`~/.codex/config.toml`に以下を追加：
+
+```toml
+[mcp_servers.mcp-discord-notifier]
+command = "mcp-discord-notifier"
+args = [
+  "--log-channel-id", "YOUR_CHANNEL_ID",
+  "--log-thread-name", "AI Conversation Log"
+]
+
+[mcp_servers.mcp-discord-notifier.env]
+DISCORD_TOKEN = "YOUR_DISCORD_BOT_TOKEN"
+```
+
+**設定の確認**
+
+Codex CLIで`codex`を起動し、`/mcp`と入力してMCPサーバーの状態を確認できます。
+
+**Tips:**
+- 設定はCLIとIDE拡張機能で共有されるため、一度設定すれば両方で使用可能
+- `codex mcp list`で現在設定されているMCPサーバーの一覧を表示
+- `codex mcp remove mcp-discord-notifier`でサーバーを削除
+- 環境変数は`[mcp_servers.<server-name>.env]`テーブルに記述
+
+## Discordセットアップ要件
+
+Discordボットには以下の権限が必要です：
+- Send Messages（メッセージの送信）
+- Create Public Threads（公開スレッドの作成）
+- Read Message History（メッセージ履歴の読み取り）
+- Embed Links（埋め込みリンク）
+
+そして以下の特権インテント：
+- Message Content Intent（メッセージコンテンツインテント）
+
+## 開発ノート
+
+### 依存関係
+- **mcp**: MCPプロトコル実装（Python SDK）
+- **discord.py**: Discord APIクライアント（v2.3以上）
+- **pydantic**: データバリデーションとスキーマ生成
+- **asyncio**: 非同期処理（Python標準ライブラリ）
+
+### スレッド命名
+スレッド名には現在の作業ディレクトリが自動的に含まれます：
+- フォーマット: `{LOG_THREAD_NAME} [{cwd}]`
+- 例: `"Conversation Log [/home/user/project]"`
+- これにより、ログがどのプロジェクトコンテキストに属するかを識別できます
+
+### エラーハンドリング
+- Discordエラーは例外として伝播
+- MCPツールエラーは`RuntimeError`としてラップ
+- DiscordまたはMCP接続のいずれかが失敗するとサーバーは終了
+
+## トラブルシューティング
+
+### MCPサーバーが起動しない場合
+
+1. **バイナリがインストールされているか確認**
+   ```bash
+   which mcp-discord-notifier
+   ```
+
+2. **環境変数が正しく設定されているか確認**
+   ```bash
+   echo $DISCORD_TOKEN
+   echo $LOG_CHANNEL_ID
+   ```
+
+3. **手動でサーバーを起動してエラーメッセージを確認**
+   ```bash
+   export DISCORD_TOKEN="your-token"
+   export LOG_CHANNEL_ID="your-channel-id"
+   mcp-discord-notifier
+   ```
+
+### "The connection with Discord is not ready"エラー
+
+- Discordボットトークンが正しいか確認
+- ボットが対象のサーバーに招待されているか確認
+- 必要な権限とインテントが有効になっているか確認（上記「Discordセットアップ要件」参照）
+
+### スレッドが作成されない
+
+- チャンネルIDが正しいか確認（数値のみ、引用符なし）
+- ボットに「Create Public Threads」権限があるか確認
+- チャンネルがスレッド作成可能なタイプ（テキストチャンネル）であるか確認
+
+### Codex固有の問題
+
+- `codex mcp list`でサーバーが正しく登録されているか確認
+- `~/.codex/config.toml`の構文エラーをチェック（TOMLフォーマット）
+- Codexを再起動して設定を再読み込み
