@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  voicevox:
+    image: voicevox/voicevox_engine:cpu-latest
+    container_name: voicevox-engine
+    ports:
+      - "50021:50021"
+    environment:
+      # VoiceVox Engine settings
+      - TZ=Asia/Tokyo
+    # restart: unless-stopped
+    # CPU version - for GPU support, use voicevox/voicevox_engine:nvidia-ubuntu20.04-latest
+    # and add the following:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
