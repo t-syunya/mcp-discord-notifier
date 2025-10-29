@@ -1,8 +1,6 @@
 """pytest configuration and fixtures."""
 
 import pytest
-import os
-from unittest.mock import patch, MagicMock
 
 
 @pytest.fixture
@@ -26,9 +24,6 @@ def isolate_env(monkeypatch):
     # Modify Settings model_config to disable .env file loading
     from src.settings import Settings
     from pydantic_settings import SettingsConfigDict
-
-    # Store original config
-    original_config = Settings.model_config.copy()
 
     # Create new config without env_file
     new_config = SettingsConfigDict(

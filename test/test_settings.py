@@ -1,6 +1,5 @@
 """Tests for settings module."""
 
-import os
 import pytest
 from pydantic import ValidationError
 from src.settings import Settings
