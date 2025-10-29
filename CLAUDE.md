@@ -392,3 +392,127 @@ Discordボットには以下の権限が必要です：
 - `codex mcp list`でサーバーが正しく登録されているか確認
 - `~/.codex/config.toml`の構文エラーをチェック（TOMLフォーマット）
 - Codexを再起動して設定を再読み込み
+
+---
+
+## このプロジェクトでMCP Discord Notifierを使用する
+
+このプロジェクトの開発中に、MCP Discord Notifierを使用して作業進捗をDiscordに通知できます。
+
+### 設定情報
+
+- **MCPサーバー**: mcp-discord-notifier
+- **プロジェクトパス**: `/mnt/l/WSL/Projects/mcp-discord-notifier`
+- **実行コマンド**: `uv run mcp-discord-notifier`
+- **環境変数**: プロジェクトルートの `.env` ファイルから自動読み込み
+
+### Claude Codeでの設定
+
+このプロジェクトのローカルMCP設定を追加：
+
+```bash
+# プロジェクトディレクトリで実行
+cd /mnt/l/WSL/Projects/mcp-discord-notifier
+
+# ローカル設定を追加
+claude mcp add mcp-discord-notifier \
+  -- bash -c "cd /mnt/l/WSL/Projects/mcp-discord-notifier && uv run mcp-discord-notifier"
+```
+
+### 利用可能なツール
+
+#### 1. log_conversation
+作業の進捗や考えをDiscordに記録：
+
+```jsonc
+{
+  "role": "assistant",  // "human" | "assistant" | "system"
+  "message": "テストの追加が完了しました。全36テストがパスしています。",
+  "context": "feat/add-tests-and-docs"  // オプション
+}
+```
+
+#### 2. wait_for_reaction
+重要な判断でユーザーの確認を待つ：
+
+```jsonc
+{
+  "message": "既存のテストを全て上書きしますか？",
+  "options": ["✅ 続行", "❌ 中止", "⏸️ 後で"],
+  "timeout": 300  // 秒
+}
+```
+
+#### 3. notify_voice
+長時間タスクの完了を音声で通知：
+
+```jsonc
+{
+  "voice_channel_id": 1356518373097214022,
+  "message": "ビルドとテストが完了しました",
+  "priority": "high",  // "normal" | "high"
+  "speaker_id": 1  // VoiceVox speaker ID
+}
+```
+
+### 音声通知を使用する場合
+
+1. **ボイスチャンネルに接続**:
+   Discordのログチャンネルで `!join` コマンドを実行
+
+2. **音声通知を送信**:
+   AIアシスタントに自然言語で依頼：
+   - 「テストが完了したら音声で教えて」
+   - 「ビルドエラーが出たら声で警告して」
+
+3. **切断**:
+   Discordで `!leave` コマンドを実行
+
+### 使用が推奨される場面
+
+以下の場面では**積極的にMCPツールを使用**してください：
+
+#### log_conversation を使用
+- **作業開始時**: 「〜の実装を開始します」
+- **作業完了時**: 「〜が完了しました」
+- **問題発見時**: 「〜でエラーが発生しています」
+- **考えや気づき**: 「〜という方法も検討できます」
+
+#### wait_for_reaction を使用
+- **破壊的変更前**: 「既存のコードを削除します」
+- **重要な判断**: 「アプローチAとBがあります」
+- **長時間タスク前**: 「この処理には時間がかかります」
+
+#### notify_voice を使用
+- **長時間ビルド完了**: 「ビルドが完了しました」
+- **テスト完了**: 「全テストがパスしました」
+- **エラー発生**: 「エラーが発生しました」
+
+### 使用制限
+
+- mcp-discord-notifierは**制限なく**いつでも利用可能です
+- 作業の進捗、発見、困っていること、考えていることなど、**自由に発言**してください
+- ユーザーとのコミュニケーションを円滑にするため、積極的に活用してください
+
+### トラブルシューティング
+
+#### MCPサーバーが起動しない
+```bash
+# 手動で起動して確認
+cd /mnt/l/WSL/Projects/mcp-discord-notifier
+uv run mcp-discord-notifier
+
+# .env ファイルを確認
+cat .env
+```
+
+#### ツールが表示されない
+```bash
+# Claude Codeの設定を確認
+claude mcp list
+
+# 設定を削除して再追加
+claude mcp remove mcp-discord-notifier
+claude mcp add mcp-discord-notifier \
+  -- bash -c "cd /mnt/l/WSL/Projects/mcp-discord-notifier && uv run mcp-discord-notifier"
+```
