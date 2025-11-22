@@ -38,6 +38,31 @@ Co-Authored-By: Claude <noreply@anthropic.com>
   - **変更詳細**: 具体的な変更点
   - **テストプラン**: 検証方法のチェックリスト
 
+### コード変更後の確認
+
+コードを変更した後は、必ず以下のコマンドでチェックを実行してください:
+
+```bash
+make check
+```
+
+このコマンドは以下を順次実行します:
+1. `make format` - Ruff でコードをフォーマット
+2. `make lint` - Ruff でリントチェック
+3. `make type-check` - Ty で型チェック
+
+個別に実行することも可能です:
+```bash
+make format      # フォーマットのみ
+make lint        # リントのみ
+make type-check  # 型チェックのみ
+```
+
+利用可能なコマンドの一覧を表示:
+```bash
+make help
+```
+
 ## プロジェクト概要
 
 Discord Conversation Loggerは、AI開発アシスタント（Cursor、Codex、Claude Code等）がDiscordを通じてユーザーとインタラクティブにコミュニケーションするためのMCP（Model Context Protocol）サーバーです。
