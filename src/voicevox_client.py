@@ -97,17 +97,22 @@ class VoiceVoxClient:
             response.raise_for_status()
             return response.content
 
-    async def text_to_speech(self, text: str, speaker_id: int = 1) -> bytes:
+    async def text_to_speech(
+        self, text: str, speaker_id: int = 1, speed_scale: float = 1.2
+    ) -> bytes:
         """Convert text to speech in one call.
 
         Args:
             text: Text to convert to speech
             speaker_id: Speaker ID (default: 1)
+            speed_scale: Speech speed multiplier (default: 1.2, faster than normal)
 
         Returns:
             WAV audio data as bytes
         """
         audio_query = await self.create_audio_query(text, speaker_id)
+        # Adjust speed
+        audio_query["speedScale"] = speed_scale
         return await self.synthesize(audio_query, speaker_id)
 
     async def is_available(self) -> bool:
