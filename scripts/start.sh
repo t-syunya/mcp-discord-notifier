@@ -6,7 +6,8 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$PROJECT_ROOT"
 
 echo "=========================================="
 echo "  MCP Discord Notifier - Start Script"
@@ -115,21 +116,25 @@ else
 fi
 echo ""
 
-# MCPサーバーの起動
-echo -e "${BLUE}[4/4] MCP Discord Notifier を起動しています...${NC}"
+# Discord Bot Daemonの起動
+echo -e "${BLUE}[4/4] Discord Bot Daemon を起動しています...${NC}"
 echo ""
 echo "設定:"
 echo "  Discord Token: ${DISCORD_TOKEN:0:20}..."
 echo "  Log Channel ID: $LOG_CHANNEL_ID"
 echo "  Log Thread Name: ${LOG_THREAD_NAME:-Conversation Log}"
 echo "  VoiceVox URL: ${VOICEVOX_URL:-http://localhost:50021}"
+echo "  HTTP API: http://127.0.0.1:8765"
 echo ""
-echo -e "${GREEN}サーバーを起動します（Ctrl+C で停止）...${NC}"
+echo -e "${GREEN}Bot Daemon を起動します（Ctrl+C で停止）...${NC}"
 echo "=========================================="
+echo ""
+echo "MCP Server は別プロセスとして Claude Code が自動起動します"
+echo "Bot Daemon は HTTP API (port 8765) で MCP Server からのリクエストを受け付けます"
 echo ""
 
 # PIDファイルのディレクトリを作成
 mkdir -p /tmp/mcp-discord-notifier
 
-# 起動（pydantic-settingsが.envから自動的に読み込むため、引数は不要）
-uv run mcp-discord-notifier
+# Bot Daemon を起動
+uv run mcp-discord-bot-daemon

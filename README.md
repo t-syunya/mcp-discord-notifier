@@ -4,6 +4,7 @@ AI開発アシスタント（Claude Code、Cursor、Codex等）がDiscordを通�
 
 ## 目次
 
+- [クイックスタート](#クイックスタート)
 - [概要](#概要)
 - [機能](#機能)
 - [必要要件](#必要要件)
@@ -19,10 +20,90 @@ AI開発アシスタント（Claude Code、Cursor、Codex等）がDiscordを通�
 - [使い方](#使い方)
   - [利用可能なツール](#利用可能なツール)
   - [実行例](#実行例)
+- [Discordボットコマンド](#discordボットコマンド)
 - [VoiceVox統合](#voicevox統合)
 - [トラブルシューティング](#トラブルシューティング)
 - [開発](#開発)
 - [ライセンス](#ライセンス)
+
+## クイックスタート
+
+5分で始める最短手順：
+
+### 1. インストール
+```bash
+git clone https://github.com/your-username/mcp-discord-notifier.git
+cd mcp-discord-notifier
+uv sync
+```
+
+### 2. Discord設定
+1. [Discord Developer Portal](https://discord.com/developers/applications) でボットを作成
+2. ボットトークンをコピー
+3. ボットをサーバーに招待（権限: Send Messages, Create Threads, Message Content Intent）
+4. チャンネルIDを取得（右クリック → IDをコピー）
+
+### 3. 環境設定
+```bash
+cp .env.example .env
+nano .env  # DISCORD_TOKENとLOG_CHANNEL_IDを設定
+```
+
+### 4. MCPクライアントに登録
+
+**Claude Code:**
+```bash
+claude mcp add mcp-discord-notifier \
+  -- bash -c "cd $(pwd) && uv run mcp-discord-notifier"
+```
+
+**Cursor:**
+`~/.cursor/mcp.json`に追加：
+```json
+{
+  "mcpServers": {
+    "mcp-discord-notifier": {
+      "command": "bash",
+      "args": ["-c", "cd /path/to/mcp-discord-notifier && uv run mcp-discord-notifier"]
+    }
+  }
+}
+```
+
+### 5. サーバーを起動
+
+**方法A: MCPクライアント経由（個人利用）**
+```bash
+# Claude Codeを起動するだけ
+# MCPクライアントが自動的にサーバーを起動します
+```
+
+**方法B: 手動起動（常時稼働）**
+```bash
+# サーバーを起動
+./scripts/start.sh
+
+# バックグラウンドで起動
+nohup ./scripts/start.sh > /dev/null 2>&1 &
+```
+
+### 6. 使ってみる
+
+**AIアシスタントで:**
+```
+ユーザー: 「Discordに進捗を報告して」
+AI: ✅ [自動的にlog_conversationツールを実行]
+```
+
+**Discordで:**
+```
+!help    # コマンド一覧
+!status  # ボットの状態確認
+```
+
+**完了！** 詳細は以下のセクションを参照してください。
+
+---
 
 ## 概要
 
@@ -295,6 +376,122 @@ MCP設定ファイル（`~/.cursor/mcp.json`または`~/.claude.json`）に以�
 
 ## 使い方
 
+### 重要：新しいアーキテクチャ
+
+**v0.2.0から、Discord BotとMCPサーバーが分離されました。**
+
+#### アーキテクチャ概要
+
+```
+┌─────────────────────────────────┐
+│  Discord Bot Daemon (常駐)       │
+│  ポート: 8765                    │
+│  - Discord接続維持               │
+│  - !help等のコマンド処理          │
+│  - ボイスチャンネル接続維持       │
+│  - HTTP API                     │
+└─────────────────────────────────┘
+         ↑ HTTP通信
+┌─────────────────────────────────┐
+│  MCP Server (必要時起動)         │
+│  - Claude Codeが自動起動         │
+│  - log_conversation             │
+│  - wait_for_reaction            │
+│  - notify_voice                 │
+└─────────────────────────────────┘
+```
+
+#### なぜ分離？
+
+1. **Discord Bot Daemon（常駐必要）**
+   - Discordコマンド（`!help`, `!join`等）の処理
+   - ボイスチャンネル接続の維持
+   - HTTP APIでリクエストを待ち受け
+
+2. **MCP Server（必要時起動）**
+   - Claude Codeが使用時のみ起動
+   - HTTP経由でBot Daemonと通信
+   - 軽量・高速に起動/終了可能
+
+#### 2つの起動方法
+
+##### 方法1: 自動起動（推奨）
+
+MCPクライアントに登録すると、クライアントが自動的にサーバーを起動・維持します：
+
+**Claude Code:**
+```bash
+claude mcp add mcp-discord-notifier \
+  -- bash -c "cd $(pwd) && uv run mcp-discord-notifier"
+```
+
+**Cursor:**
+`~/.cursor/mcp.json`に設定を追加すると、Cursor起動時にサーバーも起動します。
+
+**メリット:**
+- ✅ MCPクライアント起動時に自動起動
+- ✅ 設定ファイルで管理
+- ✅ MCPクライアント終了時に自動停止
+
+**注意:**
+- Discord Botコマンド（`!help`等）を使いたい場合は、MCPクライアントを起動しておく必要があります
+
+##### 方法2: 手動起動（Botコマンドを常時使いたい場合）
+
+Discord Botのコマンド機能を常時使いたい場合は、手動で起動します：
+
+```bash
+# 起動
+./scripts/start.sh
+
+# バックグラウンド起動（推奨）
+nohup ./scripts/start.sh > /dev/null 2>&1 &
+
+# 停止
+./scripts/stop.sh
+```
+
+**メリット:**
+- ✅ MCPクライアント起動前でもBotコマンドが使える
+- ✅ 複数のMCPクライアントから同時に使用可能
+- ✅ サーバーとして常時稼働
+
+**systemdでサービス化する場合:**
+```ini
+# /etc/systemd/system/mcp-discord-notifier.service
+[Unit]
+Description=MCP Discord Notifier
+After=network.target
+
+[Service]
+Type=simple
+User=your-user
+WorkingDirectory=/path/to/mcp-discord-notifier
+ExecStart=/path/to/mcp-discord-notifier/scripts/start.sh
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+```
+
+#### 使用フロー
+
+1. **.envファイルを設定** (初回のみ)
+   ```bash
+   cp .env.example .env
+   nano .env  # DISCORD_TOKENとLOG_CHANNEL_IDを設定
+   ```
+
+2. **サーバーを起動**
+   - 自動起動: MCPクライアントに登録
+   - 手動起動: `./scripts/start.sh`
+
+3. **使ってみる**
+   - AIアシスタントに指示: 「Discordに進捗を報告して」
+   - Discordでコマンド実行: `!help`, `!status`
+
+---
+
 ### 利用可能なツール
 
 #### 1. `log_conversation` - メッセージロギング
@@ -383,61 +580,86 @@ Discordにメッセージを記録します。
 
 ### 実行例
 
-#### 起動・停止スクリプトを使用（推奨）
+#### AIアシスタントでの使用
 
-**起動:**
-```bash
-# 1. .envファイルを作成
-cp .env.example .env
+サーバーが起動していれば、AIアシスタントに自然言語で指示するだけです：
 
-# 2. .envファイルを編集して設定を入力
-nano .env  # または好きなエディタで編集
+```
+ユーザー: 「このタスクが完了したらDiscordに報告して」
+AI: ✅ [log_conversation ツールを自動実行]
 
-# 3. サーバーを起動
-./scripts/start.sh
+ユーザー: 「重要な変更前に確認を求めて」
+AI: 🤔 [wait_for_reaction ツールを実行して、Discordでの応答を待機]
+
+ユーザー: 「ビルドが終わったら音声で知らせて」
+AI: 🔊 [notify_voice ツールを実行して、ボイスチャンネルで通知]
 ```
 
-起動スクリプトは以下を自動で行います：
-- .envファイルの確認と読み込み
-- 必須設定のバリデーション
-- VoiceVox Engineの起動と待機
-- FFmpegのインストール確認
-- MCPサーバーの起動
+#### Discord Botコマンドの使用
 
-**停止:**
-```bash
-# 通常の停止（MCPサーバーとVoiceVox Engineを停止）
-./scripts/stop.sh
+サーバーが起動していれば、Discordのログチャンネルで直接コマンドを実行できます：
 
-# VoiceVox Engineを起動したまま、MCPサーバーのみ停止
-./scripts/stop.sh --skip-voicevox
-
-# プロセスを強制終了
-./scripts/stop.sh --force
+```
+!help              # コマンド一覧を表示
+!status            # ボットの状態を確認
+!join              # ボイスチャンネルに接続
+!say テスト完了     # 音声で通知
+!speakers          # 利用可能なスピーカー一覧
 ```
 
-#### コマンドラインから直接実行
+詳細は [docs/COMMANDS.md](docs/COMMANDS.md) を参照してください。
 
-pydantic-settingsが自動的に.envファイルから設定を読み込みます：
+## Discordボットコマンド
 
-```bash
-# .envファイルを作成・編集済みの場合
-mcp-discord-notifier
+ログチャンネルでボットに対してコマンドを実行できます。すべてのコマンドは `!` で始まります。
 
-# または環境変数で上書き
-DISCORD_TOKEN="override-token" mcp-discord-notifier
+### 主なコマンド
+
+| コマンド | 説明 | エイリアス |
+|---------|------|-----------|
+| `!help [command]` | コマンド一覧または詳細ヘルプ | `!h`, `!?` |
+| `!ping` | ボットのレイテンシーを確認 | - |
+| `!status` | ボットの状態を表示 | `!info` |
+| `!thread [name]` | 新しいログスレッドを作成 | - |
+| `!join [channel_id]` | ボイスチャンネルに接続 | - |
+| `!leave` | ボイスチャンネルから切断 | `!disconnect` |
+| `!say <message>` | 音声でメッセージを読み上げ | `!speak`, `!tts` |
+| `!speakers` | VoiceVoxスピーカー一覧 | - |
+
+**使用例：**
+```
+!help              # 全コマンド表示
+!status            # ボット状態確認
+!join              # ボイスチャンネルに接続
+!say テスト完了     # 音声で通知
 ```
 
-#### Python モジュールとして実行
+詳細は [docs/COMMANDS.md](docs/COMMANDS.md) を参照してください。
 
-```bash
-# uv を使用（.envから自動読み込み）
-uv run mcp-discord-notifier
+### カスタムコマンドの追加
 
-# または仮想環境をアクティベート後
-source .venv/bin/activate
-mcp-discord-notifier
+プログラムからカスタムコマンドを追加することもできます：
+
+```python
+from mcp_discord_notifier.discord_logger import DiscordLogger
+
+logger = DiscordLogger(token, channel_id, thread_name)
+await logger.start()
+
+# カスタムコマンドを登録
+async def my_command(message, args):
+    await message.reply(f"Hello! Args: {args}")
+
+logger.register_command(
+    name="hello",
+    handler=my_command,
+    description="Say hello",
+    usage="!hello [name]",
+    category="Custom"
+)
 ```
+
+---
 
 ## VoiceVox統合
 
@@ -619,9 +841,9 @@ uv run pytest test/test_settings.py -v
 
 **テスト結果:**
 ```
-✅ ユニットテスト:           32 passed (100%)
+✅ ユニットテスト:           47 passed (100%)
 ✅ 統合テスト (自動実行可能):  4 passed, 1 skipped
-✅ 全テスト (手動除く):      36 passed, 1 skipped
+✅ 全テスト (手動除く):      51 passed, 1 skipped
 ```
 
 詳細は [test/README.md](test/README.md) を参照してください。

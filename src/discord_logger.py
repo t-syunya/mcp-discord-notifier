@@ -10,6 +10,7 @@ import discord
 from discord import Intents, Thread, Message, VoiceClient, FFmpegPCMAudio
 
 from .voicevox_client import VoiceVoxClient  # type: ignore
+from .command_handler import CommandHandler  # type: ignore
 
 
 class DiscordLogger:
@@ -42,6 +43,7 @@ class DiscordLogger:
         self._ready_event = asyncio.Event()
         self._voicevox: Optional[VoiceVoxClient] = None
         self._voice_client: Optional[VoiceClient] = None  # Persistent voice connection
+        self._command_handler: Optional[CommandHandler] = None
 
     async def start(self) -> None:
         """Start the Discord client."""
@@ -58,7 +60,7 @@ class DiscordLogger:
 
         @self._client.event
         async def on_message(message: Message):
-            """Handle incoming Discord messages for voice commands."""
+            """Handle incoming Discord messages for commands."""
             # Ignore messages from the bot itself
             if message.author == self._client.user:  # type: ignore
                 return
@@ -67,11 +69,9 @@ class DiscordLogger:
             if message.channel.id != self.log_channel_id:
                 return
 
-            # Process voice commands
-            if message.content.startswith("!join"):
-                await self._handle_join_command(message)
-            elif message.content.startswith("!leave"):
-                await self._handle_leave_command(message)
+            # Handle as command
+            if self._command_handler:
+                await self._command_handler.handle_message(message)
 
         # Initialize VoiceVox client
         self._voicevox = VoiceVoxClient(self.voicevox_url)
@@ -89,6 +89,9 @@ class DiscordLogger:
 
         # Wait for the client to be ready
         await self._ready_event.wait()
+
+        # Initialize command handler
+        self._command_handler = CommandHandler(self)
 
         # Auto-connect to voice channel if configured
         if self.voice_channel_id:
@@ -512,6 +515,47 @@ class DiscordLogger:
         except Exception as e:
             await message.reply(f"❌ Failed to disconnect: {str(e)}")
             print(f"Error disconnecting from voice channel: {e}")
+
+    def register_command(
+        self,
+        name: str,
+        handler,
+        description: str,
+        usage: str,
+        category: str = "Custom",
+        aliases: Optional[List[str]] = None,
+    ) -> None:
+        """Register a custom command.
+
+        Args:
+            name: Command name (without !)
+            handler: Async function that takes (message, args) parameters
+            description: Command description
+            usage: Usage example
+            category: Command category (default: Custom)
+            aliases: Alternative names for the command
+
+        Example:
+            async def my_command(message, args):
+                await message.reply("Hello!")
+
+            logger.register_command(
+                name="hello",
+                handler=my_command,
+                description="Say hello",
+                usage="!hello"
+            )
+        """
+        if self._command_handler is None:
+            raise RuntimeError("Command handler not initialized. Call start() first.")
+
+        self._command_handler.registry.register(
+            name=name,
+            description=description,
+            usage=usage,
+            category=category,
+            aliases=aliases,
+        )(handler)
 
     async def close(self) -> None:
         """Close the Discord client."""

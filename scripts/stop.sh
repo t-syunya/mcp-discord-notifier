@@ -6,7 +6,8 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$PROJECT_ROOT"
 
 echo "=========================================="
 echo "  MCP Discord Notifier - Stop Script"
@@ -52,14 +53,14 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# MCPサーバープロセスの停止
-echo -e "${BLUE}[1/2] MCP Discord Notifier プロセスを停止しています...${NC}"
+# Discord Bot Daemonプロセスの停止
+echo -e "${BLUE}[1/2] Discord Bot Daemon プロセスを停止しています...${NC}"
 
-# mcp-discord-notifier プロセスを検索
-PIDS=$(pgrep -f "mcp-discord-notifier" || true)
+# mcp-discord-bot-daemon プロセスを検索
+PIDS=$(pgrep -f "mcp-discord-bot-daemon" || true)
 
 if [ -z "$PIDS" ]; then
-    echo -e "${YELLOW}  ⚠ 実行中のMCP Discord Notifierプロセスが見つかりません${NC}"
+    echo -e "${YELLOW}  ⚠ 実行中のDiscord Bot Daemonプロセスが見つかりません${NC}"
 else
     echo "  以下のプロセスを停止します:"
     ps -p $PIDS -o pid,cmd --no-headers | sed 's/^/    /'
@@ -76,7 +77,7 @@ else
         # プロセスが終了するまで待機（最大10秒）
         COUNTER=0
         while [ $COUNTER -lt 10 ]; do
-            if ! pgrep -f "mcp-discord-notifier" > /dev/null 2>&1; then
+            if ! pgrep -f "mcp-discord-bot-daemon" > /dev/null 2>&1; then
                 echo -e "${GREEN}  ✓ プロセスが正常に終了しました${NC}"
                 break
             fi

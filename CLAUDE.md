@@ -75,9 +75,9 @@ uv run pytest test/ -m "not manual" --cov=src --cov-report=html
 
 **テスト結果:**
 ```
-✅ ユニットテスト:           32 passed (100%)
+✅ ユニットテスト:           47 passed (100%)
 ✅ 統合テスト (自動実行可能):  4 passed, 1 skipped
-✅ 全テスト (手動除く):      36 passed, 1 skipped
+✅ 全テスト (手動除く):      51 passed, 1 skipped
 ```
 
 詳細は [test/README.md](test/README.md) を参照。
@@ -100,7 +100,7 @@ uv run ruff check src
 
 #### 現在の実装
 
-コードベースは3つの主要なモジュールで構成されています：
+コードベースは以下の主要なモジュールで構成されています：
 
 1. **__main__.py** - エントリーポイントとMCPサーバーの初期化
    - argparseを使用してコマンドライン引数を解析（環境変数もサポート）
@@ -113,19 +113,28 @@ uv run ruff check src
    - スレッド管理: 最初のログメッセージで遅延的にスレッドを作成
    - 色分けされた埋め込み: human（青）、assistant（緑）、system（グレー）
    - リアクションベースのフィードバック機能
+   - カスタムコマンド登録API
 
-3. **mcp_server.py** - MCPプロトコル統合
+3. **command_handler.py** - Discordボットコマンドシステム
+   - `CommandRegistry`: コマンド登録とルックアップ
+   - `CommandHandler`: コマンドのパースと実行
+   - デコレータベースのコマンド登録
+   - エイリアス、カテゴリ、ヘルプメッセージのサポート
+   - 組み込みコマンド: help, ping, status, thread, join, leave, say, speakers
+
+4. **mcp_server.py** - MCPプロトコル統合
    - `ConversationLoggerServer`: `log_conversation`ツールを持つMCPサーバーハンドラー
    - Pydanticモデルを使用したリクエストバリデーション
    - MCP Python SDKを使用したプロトコル処理
 
-#### 今後追加予定のモジュール
+5. **voicevox_client.py** - VoiceVox TTS統合
+   - `VoiceVoxClient`: VoiceVox Engine APIクライアント
+   - テキスト→音声変換
+   - スピーカー一覧取得
 
-4. **voice_notifier.py**（計画中） - ボイスチャンネル統合
-   - ボイスチャンネル接続管理
-   - 音声合成（TTS）による通知
-   - 重要イベントの音声アナウンス
-   - ユーザー応答待ち状態の通知
+6. **settings.py** - 設定管理
+   - 環境変数からの設定読み込み
+   - Pydanticベースのバリデーション
 
 ### 主要な設計パターン
 
@@ -133,6 +142,8 @@ uv run ruff check src
 - **遅延初期化**: Discordスレッドは初回使用時に作成
 - **非同期処理**: asyncio/awaitを使用した非同期実行
 - **並行ランタイム**: DiscordクライアントとMCPサーバーが並行実行
+- **コマンドレジストリパターン**: デコレータベースのコマンド登録により拡張可能
+- **プラグインアーキテクチャ**: カスタムコマンドを実行時に動的に追加可能
 
 ### 設定
 
@@ -322,6 +333,130 @@ Codex CLIで`codex`を起動し、`/mcp`と入力してMCPサーバーの状態�
 - `codex mcp list`で現在設定されているMCPサーバーの一覧を表示
 - `codex mcp remove mcp-discord-notifier`でサーバーを削除
 - 環境変数は`[mcp_servers.<server-name>.env]`テーブルに記述
+
+## Discordボットコマンド
+
+ログチャンネルでボットに対してコマンドを実行できます。すべてのコマンドは `!` で始まります。
+
+### 情報コマンド
+
+#### !help [command]
+利用可能なコマンドの一覧を表示します。特定のコマンド名を指定すると、そのコマンドの詳細なヘルプを表示します。
+
+**エイリアス**: `!h`, `!?`
+
+**使用例**:
+```
+!help           # 全コマンド一覧
+!help ping      # pingコマンドの詳細
+!h              # エイリアスでも可
+```
+
+#### !ping
+ボットのレイテンシー（応答速度）を確認します。
+
+**使用例**:
+```
+!ping
+```
+
+#### !status
+ボットの現在の状態を表示します：
+- ボット情報
+- レイテンシー
+- ログスレッド
+- ボイスチャンネル接続状態
+- VoiceVox Engine の状態
+
+**エイリアス**: `!info`
+
+**使用例**:
+```
+!status
+!info
+```
+
+### 管理コマンド
+
+#### !thread [name]
+新しいログスレッドを作成します。名前を指定すると、そのスレッド名で作成されます。
+
+**使用例**:
+```
+!thread                    # デフォルト名で新規作成
+!thread New Feature Work   # 指定した名前で作成
+```
+
+### ボイスコマンド
+
+#### !join [voice_channel_id]
+ボイスチャンネルに接続します。チャンネルIDを省略した場合、環境変数で設定されたデフォルトチャンネルに接続します。
+
+**使用例**:
+```
+!join                      # デフォルトチャンネルに接続
+!join 123456789012345678   # 指定したチャンネルに接続
+```
+
+**Tips**: チャンネルIDの取得方法
+1. Discordの設定で開発者モードを有効化
+2. ボイスチャンネルを右クリック
+3. 「IDをコピー」を選択
+
+#### !leave
+現在接続中のボイスチャンネルから切断します。
+
+**エイリアス**: `!disconnect`
+
+**使用例**:
+```
+!leave
+!disconnect
+```
+
+#### !say <message>
+接続中のボイスチャンネルでメッセージを音声読み上げします（VoiceVox が必要）。
+
+**エイリアス**: `!speak`, `!tts`
+
+**使用例**:
+```
+!say こんにちは
+!speak テストが完了しました
+!tts ビルドに成功しました
+```
+
+#### !speakers
+VoiceVox Engine で利用可能な音声スピーカーの一覧を表示します。
+
+**使用例**:
+```
+!speakers
+```
+
+### カスタムコマンドの追加
+
+プログラムからカスタムコマンドを追加することもできます：
+
+```python
+from mcp_discord_notifier.discord_logger import DiscordLogger
+
+logger = DiscordLogger(token, channel_id, thread_name)
+await logger.start()
+
+# カスタムコマンドを登録
+async def my_command(message, args):
+    await message.reply(f"Hello! Args: {args}")
+
+logger.register_command(
+    name="hello",
+    handler=my_command,
+    description="Say hello",
+    usage="!hello [name]",
+    category="Custom",
+    aliases=["hi", "greet"]
+)
+```
 
 ## Discordセットアップ要件
 
