@@ -12,8 +12,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  static-checks:
-    name: Static Checks
+  format:
+    name: Format Check (Ruff)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -35,8 +35,48 @@ jobs:
       - name: Ruff Format
         run: uv run --group dev ruff format --config pyproject.toml --check .
 
+  lint:
+    name: Lint Check (Ruff)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v2
+
+      - name: Sync dependencies
+        run: uv sync --group dev
+
       - name: Ruff Lint
         run: uv run --group dev ruff check --output-format=github .
+
+  type-check:
+    name: Type Check (Ty)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v2
+
+      - name: Sync dependencies
+        run: uv sync --group dev
 
       - name: Ty Type Check
         run: uv run --group dev ty check src/
