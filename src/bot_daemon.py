@@ -2,7 +2,7 @@
 
 import asyncio
 import os
-from typing import Optional, List, Dict, Any
+from typing import Optional, List
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -67,7 +67,9 @@ class BotDaemon:
         async def log_message(request: LogRequest):
             """Log a message to Discord."""
             if not self.discord_logger:
-                raise HTTPException(status_code=503, detail="Discord logger not initialized")
+                raise HTTPException(
+                    status_code=503, detail="Discord logger not initialized"
+                )
 
             try:
                 await self.discord_logger.log(
@@ -81,7 +83,9 @@ class BotDaemon:
         async def wait_for_reaction(request: WaitReactionRequest):
             """Wait for user reaction on Discord."""
             if not self.discord_logger:
-                raise HTTPException(status_code=503, detail="Discord logger not initialized")
+                raise HTTPException(
+                    status_code=503, detail="Discord logger not initialized"
+                )
 
             try:
                 result = await self.discord_logger.wait_for_reaction(
@@ -97,7 +101,9 @@ class BotDaemon:
         async def notify_voice(request: NotifyVoiceRequest):
             """Send voice notification."""
             if not self.discord_logger:
-                raise HTTPException(status_code=503, detail="Discord logger not initialized")
+                raise HTTPException(
+                    status_code=503, detail="Discord logger not initialized"
+                )
 
             try:
                 result = await self.discord_logger.notify_voice(
@@ -129,7 +135,7 @@ class BotDaemon:
     async def run(self, host: str = "127.0.0.1", port: int = 8765):
         """Run the bot daemon."""
         # Start Discord client in background
-        discord_task = asyncio.create_task(self.start_discord())
+        asyncio.create_task(self.start_discord())
 
         # Wait for Discord to be ready
         await asyncio.sleep(3)

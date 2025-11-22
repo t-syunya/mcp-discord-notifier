@@ -188,7 +188,9 @@ class ConversationLoggerServer:
                             )
                         ]
                     except httpx.HTTPError as e:
-                        raise RuntimeError(f"Failed to send voice notification: {e}") from e
+                        raise RuntimeError(
+                            f"Failed to send voice notification: {e}"
+                        ) from e
 
                 else:
                     raise ValueError(f"Unknown tool: {name}")
