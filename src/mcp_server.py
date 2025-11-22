@@ -1,12 +1,11 @@
 """MCP server implementation for conversation logging."""
 
 from typing import Optional, List
+import httpx
 
 from mcp.server import Server
 from mcp.types import Tool, TextContent
 from pydantic import BaseModel, Field
-
-from .discord_logger import DiscordLogger  # type: ignore
 
 
 class LogConversationRequest(BaseModel):
@@ -53,15 +52,15 @@ class NotifyVoiceRequest(BaseModel):
 
 
 class ConversationLoggerServer:
-    """MCP server for logging conversations to Discord."""
+    """MCP server for logging conversations to Discord via HTTP."""
 
-    def __init__(self, discord_logger: DiscordLogger):
+    def __init__(self, bot_daemon_url: str = "http://127.0.0.1:8765"):
         """Initialize the MCP server.
 
         Args:
-            discord_logger: The Discord logger instance to use
+            bot_daemon_url: URL of the Discord Bot Daemon HTTP API
         """
-        self.discord_logger = discord_logger
+        self.bot_daemon_url = bot_daemon_url
         self.server = Server("mcp-discord-notifier")
         self._setup_handlers()
 
@@ -104,76 +103,97 @@ class ConversationLoggerServer:
         @self.server.call_tool()
         async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             """Handle tool calls."""
-            if name == "log_conversation":
-                # Parse and validate arguments
-                request = LogConversationRequest(**arguments)
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                if name == "log_conversation":
+                    # Parse and validate arguments
+                    request = LogConversationRequest(**arguments)
 
-                # Log the message
-                try:
-                    await self.discord_logger.log(
-                        request.role, request.message, request.context
-                    )
-                    return [
-                        TextContent(
-                            type="text",
-                            text="Message logged successfully",
+                    # Send HTTP request to bot daemon
+                    try:
+                        response = await client.post(
+                            f"{self.bot_daemon_url}/log",
+                            json={
+                                "role": request.role,
+                                "message": request.message,
+                                "context": request.context,
+                            },
                         )
-                    ]
-                except Exception as e:
-                    raise RuntimeError(f"Failed to log message: {e}") from e
+                        response.raise_for_status()
+                        return [
+                            TextContent(
+                                type="text",
+                                text="Message logged successfully",
+                            )
+                        ]
+                    except httpx.HTTPError as e:
+                        raise RuntimeError(f"Failed to log message: {e}") from e
 
-            elif name == "wait_for_reaction":
-                # Parse and validate arguments
-                request = WaitForReactionRequest(**arguments)
+                elif name == "wait_for_reaction":
+                    # Parse and validate arguments
+                    request = WaitForReactionRequest(**arguments)
 
-                # Wait for user reaction
-                try:
-                    result = await self.discord_logger.wait_for_reaction(
-                        request.message,
-                        request.options,
-                        request.timeout,
-                        request.context,
-                    )
-                    return [
-                        TextContent(
-                            type="text",
-                            text=f"User selected: {result['option']} (by {result['user']})",
+                    # Send HTTP request to bot daemon
+                    try:
+                        response = await client.post(
+                            f"{self.bot_daemon_url}/wait_reaction",
+                            json={
+                                "message": request.message,
+                                "options": request.options,
+                                "timeout": request.timeout,
+                                "context": request.context,
+                            },
+                            timeout=request.timeout + 5.0,
                         )
-                    ]
-                except Exception as e:
-                    raise RuntimeError(f"Failed to wait for reaction: {e}") from e
+                        response.raise_for_status()
+                        result = response.json()["result"]
+                        return [
+                            TextContent(
+                                type="text",
+                                text=f"User selected: {result['option']} (by {result['user']})",
+                            )
+                        ]
+                    except httpx.HTTPError as e:
+                        raise RuntimeError(f"Failed to wait for reaction: {e}") from e
 
-            elif name == "notify_voice":
-                # Parse and validate arguments
-                request = NotifyVoiceRequest(**arguments)
+                elif name == "notify_voice":
+                    # Parse and validate arguments
+                    request = NotifyVoiceRequest(**arguments)
 
-                # Send voice notification
-                try:
-                    result = await self.discord_logger.notify_voice(
-                        request.voice_channel_id,
-                        request.message,
-                        request.priority,
-                        request.speaker_id,
-                    )
-                    # Build response message
-                    if result["status"] == "played":
-                        response_text = f"Voice notification played in {result['voice_channel']} (Speaker: {result['speaker_id']})"
-                    else:
-                        response_text = f"Voice notification sent to {result['voice_channel']} ({result['status']})"
-                        if "note" in result:
-                            response_text += f". {result['note']}"
-
-                    return [
-                        TextContent(
-                            type="text",
-                            text=response_text,
+                    # Send HTTP request to bot daemon
+                    try:
+                        response = await client.post(
+                            f"{self.bot_daemon_url}/notify_voice",
+                            json={
+                                "voice_channel_id": request.voice_channel_id,
+                                "message": request.message,
+                                "priority": request.priority,
+                                "speaker_id": request.speaker_id,
+                            },
                         )
-                    ]
-                except Exception as e:
-                    raise RuntimeError(f"Failed to send voice notification: {e}") from e
+                        response.raise_for_status()
+                        result = response.json()["result"]
 
-            else:
-                raise ValueError(f"Unknown tool: {name}")
+                        # Build response message
+                        if result["status"] == "played":
+                            response_text = f"Voice notification played in {result['voice_channel']} (Speaker: {result['speaker_id']})"
+                        else:
+                            response_text = f"Voice notification sent to {result['voice_channel']} ({result['status']})"
+                            if "note" in result:
+                                response_text += f". {result['note']}"
+
+                        return [
+                            TextContent(
+                                type="text",
+                                text=response_text,
+                            )
+                        ]
+                    except httpx.HTTPError as e:
+                        raise RuntimeError(
+                            f"Failed to send voice notification: {e}"
+                        ) from e
+
+                else:
+                    raise ValueError(f"Unknown tool: {name}")
 
     async def run(self) -> None:
         """Run the MCP server."""
