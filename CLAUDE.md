@@ -690,6 +690,126 @@ claude mcp add mcp-discord-notifier \
 - 作業の進捗、発見、困っていること、考えていることなど、**自由に発言**してください
 - ユーザーとのコミュニケーションを円滑にするため、積極的に活用してください
 
+## 自動音声通知ルール
+
+このプロジェクトでは、以下の実行関連イベントで**自動的に音声通知を行う**ようにしてください：
+
+### 必須通知イベント
+
+#### 1. テスト実行完了
+テストコマンド（`pytest`, `make test` など）を実行した後、結果を音声で通知：
+
+```python
+# テスト実行後
+notify_voice(
+    voice_channel_id=1356518373097214022,
+    message=f"テストが完了しました。{passed}件成功、{failed}件失敗です。",
+    priority="normal" if failed == 0 else "high",
+    speaker_id=1  # 四国めたん
+)
+```
+
+#### 2. ビルド/チェック完了
+`make check`, `make build` などのビルド関連コマンド実行後：
+
+```python
+# ビルド成功時
+notify_voice(
+    voice_channel_id=1356518373097214022,
+    message="ビルドとチェックが完了しました。エラーはありません。",
+    priority="normal",
+    speaker_id=1  # 四国めたん
+)
+
+# ビルド失敗時
+notify_voice(
+    voice_channel_id=1356518373097214022,
+    message="ビルドでエラーが発生しました。確認してください。",
+    priority="high",
+    speaker_id=1  # 四国めたん
+)
+```
+
+#### 3. 長時間タスク完了
+実行時間が30秒以上かかるコマンドの完了時：
+
+```python
+notify_voice(
+    voice_channel_id=1356518373097214022,
+    message="長時間タスクが完了しました。",
+    priority="normal",
+    speaker_id=1
+)
+```
+
+#### 4. エラー発生
+コマンド実行中にエラーが発生した場合：
+
+```python
+notify_voice(
+    voice_channel_id=1356518373097214022,
+    message="エラーが発生しました。詳細を確認してください。",
+    priority="high",
+    speaker_id=1  # 四国めたん
+)
+```
+
+### 通知のタイミング
+
+1. **実行前**: `log_conversation` でタスク開始をログ
+2. **実行中**: 長時間タスクの場合、進捗を定期的にログ
+3. **実行後**:
+   - `log_conversation` で結果の詳細をログ
+   - `notify_voice` で音声通知（**必須**）
+
+### 実装例
+
+```python
+# 例: テスト実行フロー
+async def run_tests():
+    # 1. 開始をログ
+    log_conversation(
+        role="assistant",
+        message="テストを実行します...",
+        context="test-execution"
+    )
+
+    # 2. テスト実行
+    result = subprocess.run(["pytest", "test/"])
+
+    # 3. 結果をログ
+    log_conversation(
+        role="assistant",
+        message=f"テスト完了: {result.returncode == 0 and '成功' or '失敗'}",
+        context="test-result"
+    )
+
+    # 4. 音声通知（必須）
+    notify_voice(
+        voice_channel_id=1356518373097214022,
+        message=f"テストが完了しました。結果: {result.returncode == 0 and '成功' or '失敗'}",
+        priority="high" if result.returncode != 0 else "normal",
+        speaker_id=1  # 四国めたん
+    )
+```
+
+### スピーカー選択ガイドライン
+
+- **speaker_id=1** (四国めたん): **デフォルト** - 全ての通知で使用
+- **speaker_id=3** (ずんだもん): 必要に応じて使用可能
+- **speaker_id=8** (春日部つむぎ): 必要に応じて使用可能
+
+### 音声設定
+
+- **話速**: デフォルトで1.2倍速（通常より少し早め）に設定済み
+- VoiceVoxClientで自動的に適用されます
+
+### 注意事項
+
+- **VoiceVox Engine が起動していない場合**: 自動的にテキストチャンネルへフォールバックするため、問題ありません
+- **Discord Bot Daemon が起動していない場合**: エラーが発生するため、事前に `./scripts/start.sh` で起動してください
+- **音声通知は必須**: ユーザーが通話中の場合、リアルタイムで作業状況を把握できるため、必ず実行してください
+
 ### トラブルシューティング
 
 #### MCPサーバーが起動しない
