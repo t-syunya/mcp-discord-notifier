@@ -1,8 +1,8 @@
 """Tests for command handler."""
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, Mock
-from src.command_handler import CommandRegistry, CommandHandler, Command
+from unittest.mock import AsyncMock, MagicMock
+from src.command_handler import CommandRegistry, CommandHandler
 import discord
 
 
