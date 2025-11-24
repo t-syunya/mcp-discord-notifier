@@ -15,6 +15,10 @@
 - `test/` ではユニット・統合テストを整理しており、`test_voice_persistent.py` は音声キャッシュ、`test_integration.py` はDiscordモックを用いたエンドツーエンド検証です。
 - ルート直下の `docker-compose.yml` と `scripts/start.sh` はVoiceVoxエンジン付き起動の定石です。環境変数は `.env`（`.env.example` をコピー）に保存してください。
 
+### 音声通知の挙動
+- `notify_voice` ツールおよび `!say` コマンドは、Discordテキスト埋め込みの送信とVoiceVoxによる音声再生を常にセットで行います（どちらか一方のみにはなりません）。
+- VoiceVox Engineが起動していない、またはボイスチャンネルへ接続できない場合はエラーとして扱われます。事前に `VOICEVOX_URL` と `VOICE_CHANNEL_ID` を設定し、VoiceVoxを起動してから実行してください。
+
 ## ビルド・テスト・開発コマンド
 ```bash
 uv sync                      # 依存関係をインストール

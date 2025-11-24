@@ -96,13 +96,12 @@ if command -v docker-compose &> /dev/null || command -v docker &> /dev/null; the
 
         if [ $COUNTER -eq 30 ]; then
             echo -e "${YELLOW}  ⚠ VoiceVox Engine の起動確認がタイムアウトしました${NC}"
-            echo -e "${YELLOW}  　音声通知はテキストログにフォールバックします${NC}"
+            echo -e "${YELLOW}  　音声通知は失敗します。VoiceVox を起動して再試行してください${NC}"
         fi
     fi
 else
     echo -e "${YELLOW}  ⚠ Docker がインストールされていません${NC}"
-    echo -e "${YELLOW}  　VoiceVox Engine なしで起動します${NC}"
-    echo -e "${YELLOW}  　音声通知はテキストログのみになります${NC}"
+    echo -e "${YELLOW}  　VoiceVox Engine を起動できないため音声通知は失敗します${NC}"
 fi
 echo ""
 

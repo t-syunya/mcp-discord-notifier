@@ -35,6 +35,9 @@ AI開発アシスタント（Claude Code、Cursor、Codex等）がDiscordを通�
 git clone https://github.com/your-username/mcp-discord-notifier.git
 cd mcp-discord-notifier
 uv sync
+
+# VoiceVoxのみ起動したい場合
+make voicevox
 ```
 
 ### 2. Discord設定
@@ -80,11 +83,13 @@ claude mcp add mcp-discord-notifier \
 
 **方法B: 手動起動（常時稼働）**
 ```bash
-# サーバーを起動
-./scripts/start.sh
+# 音声エンジン + Bot + MCP を一括起動
+make start-all
 
-# バックグラウンドで起動
-nohup ./scripts/start.sh > /dev/null 2>&1 &
+# それぞれ個別に起動する場合
+make voicevox   # VoiceVox Engine (docker-compose)
+make mcp-bot    # Discord Bot Daemon
+make mcp        # MCPサーバー
 ```
 
 ### 6. 使ってみる
@@ -143,7 +148,7 @@ AI: ✅ [自動的にlog_conversationツールを実行]
   - ボイスチャンネルでの音声再生
   - 複数のスピーカー（声質）選択
   - 優先度設定（normal/high）
-  - VoiceVox未利用時の自動フォールバック
+  - テキスト埋め込み送信と音声再生をセットで実施（どちらか一方のみにはならない）
 
 ### 🚧 計画中の機能
 
@@ -232,7 +237,7 @@ curl http://localhost:50021/version
 
 **成功すると**、バージョン情報のJSONが返されます。
 
-**VoiceVoxなしで使用する場合**: `notify_voice`ツールは自動的にテキストログのみにフォールバックします。
+**VoiceVoxなしで使用する場合**: `notify_voice`ツールは失敗します（音声再生とテキスト通知はセットで行われます）。
 
 #### 利用可能なスピーカー
 

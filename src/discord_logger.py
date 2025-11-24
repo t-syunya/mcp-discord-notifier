@@ -268,9 +268,6 @@ class DiscordLogger:
     ) -> Dict[str, Any]:
         """Send a voice notification using VoiceVox TTS.
 
-        Note: This method requires a persistent voice connection established via !join command.
-        If not connected, the notification will only be logged to the text channel.
-
         Args:
             voice_channel_id: ID of the voice channel (for reference only, not used if already connected)
             message: Message to announce via text-to-speech
@@ -297,43 +294,30 @@ class DiscordLogger:
         )
         embed.add_field(name="Priority", value=priority.upper(), inline=True)
 
-        # Check if connected to voice channel
-        if not self._voice_client or not self._voice_client.is_connected():
-            embed.add_field(
-                name="Status", value="⚠️ Not connected to voice channel", inline=False
-            )
-            embed.set_footer(text="Use !join <voice_channel_id> to connect")
+        # Ensure voice connection is available. If接続できない場合は例外を投げて呼び出し元に失敗を伝える。
+        try:
+            voice_channel_name = await self._ensure_voice_connection(voice_channel_id)
+            embed.add_field(name="Voice Channel", value=voice_channel_name, inline=True)
+        except Exception as e:
+            embed.add_field(name="Status", value="❌ Voice channel unavailable", inline=False)
+            embed.set_footer(text=str(e))
             await thread.send(embed=embed)
-            return {
-                "status": "not_connected",
-                "message": message,
-                "priority": priority,
-                "note": "Not connected to voice channel - message logged to text only. Use !join command to connect.",
-            }
-
-        voice_channel_name = self._voice_client.channel.name
-        embed.add_field(name="Voice Channel", value=voice_channel_name, inline=True)
+            raise
 
         # Check if VoiceVox is available
         if self._voicevox is None or not await self._voicevox.is_available():
             embed.add_field(
-                name="Status", value="⚠️ VoiceVox not available", inline=False
+                name="Status", value="❌ VoiceVox not available", inline=False
             )
             embed.set_footer(text="VoiceVox Engine is not running")
             await thread.send(embed=embed)
-            return {
-                "status": "voicevox_unavailable",
-                "voice_channel": voice_channel_name,
-                "message": message,
-                "priority": priority,
-                "note": "VoiceVox not available - message logged to text channel only",
-            }
+            raise RuntimeError("VoiceVox is required for voice notifications")
 
         audio_file_path: Optional[str] = None
 
         try:
-            # Generate TTS audio using VoiceVox
             embed.add_field(name="Status", value="🎵 Generating audio...", inline=False)
+            # Generate TTS audio using VoiceVox
             status_msg = await thread.send(embed=embed)
 
             audio_data = await self._voicevox.text_to_speech(message, speaker_id)
@@ -395,6 +379,30 @@ class DiscordLogger:
                     os.unlink(audio_file_path)
                 except Exception:
                     pass  # Ignore cleanup errors
+
+    async def _ensure_voice_connection(self, requested_channel_id: Optional[int]) -> str:
+        """Ensure the bot is connected to a voice channel for notifications.
+
+        Returns the connected channel name or raises an exception if connection fails.
+        """
+
+        # If already connected, reuse the existing connection
+        if self._voice_client and self._voice_client.is_connected():
+            return self._voice_client.channel.name
+
+        channel_id = requested_channel_id or self.voice_channel_id
+        if not channel_id:
+            raise RuntimeError("Voice channel ID is required for voice notifications")
+
+        voice_channel = self._client.get_channel(channel_id)  # type: ignore
+        if voice_channel is None:
+            raise RuntimeError(f"Voice channel {channel_id} not found")
+
+        if not isinstance(voice_channel, discord.VoiceChannel):
+            raise RuntimeError(f"Channel {channel_id} is not a voice channel")
+
+        self._voice_client = await voice_channel.connect()
+        return voice_channel.name
 
     async def _auto_connect_voice(self) -> None:
         """Automatically connect to voice channel if configured."""

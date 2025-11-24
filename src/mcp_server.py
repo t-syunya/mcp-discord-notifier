@@ -92,9 +92,8 @@ class ConversationLoggerServer:
                 Tool(
                     name="notify_voice",
                     description=(
-                        "Send a voice notification to a Discord voice channel. "
-                        "Use this to notify users who are in voice channels. "
-                        "Note: Full TTS is not yet implemented - currently logs to text channel."
+                        "Send a voice notification to a Discord voice channel while also logging the message to text. "
+                        "Both text and TTS playback are performed; if audio playback fails the tool returns an error."
                     ),
                     inputSchema=NotifyVoiceRequest.model_json_schema(),
                 ),
@@ -174,19 +173,12 @@ class ConversationLoggerServer:
                         result = response.json()["result"]
 
                         # Build response message
-                        if result["status"] == "played":
-                            response_text = f"Voice notification played in {result['voice_channel']} (Speaker: {result['speaker_id']})"
-                        else:
-                            response_text = f"Voice notification sent to {result['voice_channel']} ({result['status']})"
-                            if "note" in result:
-                                response_text += f". {result['note']}"
+                        response_text = (
+                            f"Voice notification played in {result['voice_channel']} "
+                            f"(Speaker: {result['speaker_id']})"
+                        )
 
-                        return [
-                            TextContent(
-                                type="text",
-                                text=response_text,
-                            )
-                        ]
+                        return [TextContent(type="text", text=response_text)]
                     except httpx.HTTPError as e:
                         raise RuntimeError(
                             f"Failed to send voice notification: {e}"
