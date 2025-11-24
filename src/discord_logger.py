@@ -299,7 +299,9 @@ class DiscordLogger:
             voice_channel_name = await self._ensure_voice_connection(voice_channel_id)
             embed.add_field(name="Voice Channel", value=voice_channel_name, inline=True)
         except Exception as e:
-            embed.add_field(name="Status", value="❌ Voice channel unavailable", inline=False)
+            embed.add_field(
+                name="Status", value="❌ Voice channel unavailable", inline=False
+            )
             embed.set_footer(text=str(e))
             await thread.send(embed=embed)
             raise
@@ -380,7 +382,9 @@ class DiscordLogger:
                 except Exception:
                     pass  # Ignore cleanup errors
 
-    async def _ensure_voice_connection(self, requested_channel_id: Optional[int]) -> str:
+    async def _ensure_voice_connection(
+        self, requested_channel_id: Optional[int]
+    ) -> str:
         """Ensure the bot is connected to a voice channel for notifications.
 
         Returns the connected channel name or raises an exception if connection fails.
