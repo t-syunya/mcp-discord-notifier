@@ -167,7 +167,7 @@ Speak a message in the connected voice channel using text-to-speech.
 **Notes**:
 - Uses default VoiceVox speaker (ID: 1 - 四国めたん)
 - Japanese text is recommended for best quality
-- If VoiceVox is unavailable, message will be logged to text channel only
+- VoiceVoxが起動していない場合はコマンドが失敗します（音声再生とテキスト通知は常にセットで行います）
 
 ---
 
