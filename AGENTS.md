@@ -2,13 +2,13 @@
 
 ## MCP利用状況と確認手順
 - 2025-11-22時点で、Claude Code から本MCPが正常に利用できることを確認済み（ユーザー報告）。
-- 2025-11-22時点で、Codex CLI から本MCPを登録済み（`codex mcp list` で `enabled` を確認済み）。起動コマンドは `uv run mcp-discord-notifier --log-thread-name "Conversation Log"` を bash 経由で実行し、`UV_CACHE_DIR=/home/kkts0/Projects/mcp-discord-notifier/.uv-cache` を指定して権限問題を回避しています。
+- 2025-11-22時点で、Codex CLI から本MCPを登録済み（`codex mcp list` で `enabled` を確認済み）。起動コマンドは `uv run mcp-discord-notifier --log-thread-name "Conversation Log"` を bash 経由で実行し、`UV_CACHE_DIR=/home/tamura/mcp-discord-notifier/.uv-cache` を指定して権限問題を回避しています。
 - ローカル環境で利用可否を確認する場合は以下を実行してください：
   1. `claude mcp list | grep mcp-discord-notifier` で登録状態を確認
-  2. 未登録の場合は `claude mcp add mcp-discord-notifier -- bash -c "cd /mnt/l/WSL/Projects/mcp-discord-notifier && uv run mcp-discord-notifier"`
+  2. 未登録の場合は `claude mcp add mcp-discord-notifier -- bash -c "cd /home/tamura/mcp-discord-notifier && uv run mcp-discord-notifier"`
   3. 必要に応じて `.env` に `DISCORD_TOKEN` と `LOG_CHANNEL_ID` を設定し、`uv run mcp-discord-notifier --log-thread-name "Conversation Log"` で起動確認
   4. Codexで確認する場合は `codex mcp list` を実行し、`mcp-discord-notifier` が `enabled` 状態で表示されることを確認。未登録なら下記で追加（ローカルキャッシュ先を明示）：
-     `codex mcp add mcp-discord-notifier --env DISCORD_TOKEN="$DISCORD_TOKEN" --env LOG_CHANNEL_ID="$LOG_CHANNEL_ID" --env LOG_THREAD_NAME="${LOG_THREAD_NAME:-Conversation Log}" --env UV_CACHE_DIR="/home/kkts0/Projects/mcp-discord-notifier/.uv-cache" -- bash -c "cd /home/kkts0/Projects/mcp-discord-notifier && uv run mcp-discord-notifier --log-thread-name \"${LOG_THREAD_NAME:-Conversation Log}\""`
+     `codex mcp add mcp-discord-notifier --env DISCORD_TOKEN="$DISCORD_TOKEN" --env LOG_CHANNEL_ID="$LOG_CHANNEL_ID" --env LOG_THREAD_NAME="${LOG_THREAD_NAME:-Conversation Log}" --env UV_CACHE_DIR="/home/tamura/mcp-discord-notifier/.uv-cache" -- bash -c "cd /home/tamura/mcp-discord-notifier && uv run mcp-discord-notifier --log-thread-name \"${LOG_THREAD_NAME:-Conversation Log}\""`
 
 ## プロジェクト構成とモジュール概要
 - `src/` にはエージェント本体があり、`mcp_server.py` がMCPエンドポイント、`discord_logger.py` がDiscord埋め込み生成、`voicevox_client.py` がVoiceVox連携を担います。設定値は `settings.py` に集約されています。

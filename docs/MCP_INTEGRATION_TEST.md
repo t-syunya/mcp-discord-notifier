@@ -41,7 +41,7 @@
 
 ```bash
 # プロジェクトディレクトリで実行
-cd /mnt/l/WSL/Projects/mcp-discord-notifier
+cd /home/tamura/mcp-discord-notifier
 
 # Daemon を起動
 ./scripts/start.sh
@@ -310,7 +310,7 @@ CPU: < 1% (アイドル時)
 ```json
 {
   "projects": {
-    "/mnt/l/WSL/Projects/mcp-discord-notifier": {
+    "/home/tamura/mcp-discord-notifier": {
       "mcpServers": {
         "mcp-discord-notifier": {
           "type": "stdio",
@@ -420,7 +420,7 @@ curl http://localhost:50021/speakers
 
 ## 参考情報
 
-- **プロジェクトルート:** `/mnt/l/WSL/Projects/mcp-discord-notifier`
+- **プロジェクトルート:** `/home/tamura/mcp-discord-notifier`
 - **Discord Bot:** `vvmcp-bot#8955`
 - **ログチャンネル:** `作業` (ID: 1356518373097214018)
 - **ボイスチャンネル:** `作業` (ID: 1356518373097214022)

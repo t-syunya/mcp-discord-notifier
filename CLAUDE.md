@@ -598,7 +598,7 @@ Discordボットには以下の権限が必要です：
 ### 設定情報
 
 - **MCPサーバー**: mcp-discord-notifier
-- **プロジェクトパス**: `/mnt/l/WSL/Projects/mcp-discord-notifier`
+- **プロジェクトパス**: `/home/tamura/mcp-discord-notifier`
 - **実行コマンド**: `uv run mcp-discord-notifier`
 - **環境変数**: プロジェクトルートの `.env` ファイルから自動読み込み
 
@@ -608,11 +608,11 @@ Discordボットには以下の権限が必要です：
 
 ```bash
 # プロジェクトディレクトリで実行
-cd /mnt/l/WSL/Projects/mcp-discord-notifier
+cd /home/tamura/mcp-discord-notifier
 
 # ローカル設定を追加
 claude mcp add mcp-discord-notifier \
-  -- bash -c "cd /mnt/l/WSL/Projects/mcp-discord-notifier && uv run mcp-discord-notifier"
+  -- bash -c "cd /home/tamura/mcp-discord-notifier && uv run mcp-discord-notifier"
 ```
 
 ### 利用可能なツール
@@ -815,7 +815,7 @@ async def run_tests():
 #### MCPサーバーが起動しない
 ```bash
 # 手動で起動して確認
-cd /mnt/l/WSL/Projects/mcp-discord-notifier
+cd /home/tamura/mcp-discord-notifier
 uv run mcp-discord-notifier
 
 # .env ファイルを確認
@@ -830,5 +830,5 @@ claude mcp list
 # 設定を削除して再追加
 claude mcp remove mcp-discord-notifier
 claude mcp add mcp-discord-notifier \
-  -- bash -c "cd /mnt/l/WSL/Projects/mcp-discord-notifier && uv run mcp-discord-notifier"
+  -- bash -c "cd /home/tamura/mcp-discord-notifier && uv run mcp-discord-notifier"
 ```
