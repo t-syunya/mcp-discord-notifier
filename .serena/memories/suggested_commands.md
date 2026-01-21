@@ -1,0 +1,12 @@
+# よく使うコマンド
+- 依存インストール: `uv sync`
+- MCPサーバー起動: `uv run mcp-discord-notifier --log-thread-name "Conversation Log"` または `make mcp`
+- Discord Botデーモン起動: `uv run mcp-discord-bot-daemon` または `make mcp-bot`
+- VoiceVox起動(docker): `make voicevox` (docker-compose必須)
+- 一括起動: `make start-all` / 停止: `make stop-all`
+- テスト: `uv run pytest -q`
+- Lint: `uv run --group dev ruff check .`
+- フォーマット: `uv run --group dev ruff format --config pyproject.toml .`
+- 型チェック: `PYTHONPATH=src uv run --group dev ty check src/`
+- MCP登録例(Claude Code): `claude mcp add mcp-discord-notifier -- bash -c "cd $(pwd) && uv run mcp-discord-notifier"` (UV_CACHE_DIRをリポジトリ配下に指定すると権限回避)
+- 環境ファイル: `cp .env.example .env`
