@@ -261,7 +261,7 @@ class DiscordLogger:
 
     async def notify_voice(
         self,
-        voice_channel_id: int,
+        voice_channel_id: Optional[int] = None,
         message: str,
         priority: str = "normal",
         speaker_id: int = 1,
@@ -269,7 +269,7 @@ class DiscordLogger:
         """Send a voice notification using VoiceVox TTS.
 
         Args:
-            voice_channel_id: ID of the voice channel (for reference only, not used if already connected)
+            voice_channel_id: ID of the voice channel (overrides configured default if provided)
             message: Message to announce via text-to-speech
             priority: Priority level ("normal" or "high")
             speaker_id: VoiceVox speaker ID (default: 1 = 四国めたん ノーマル)

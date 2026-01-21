@@ -33,7 +33,6 @@ class WaitReactionRequest(BaseModel):
 class NotifyVoiceRequest(BaseModel):
     """Request model for voice notifications."""
 
-    voice_channel_id: int
     message: str
     priority: str = "normal"
     speaker_id: int = 1
@@ -105,9 +104,17 @@ class BotDaemon:
                     status_code=503, detail="Discord logger not initialized"
                 )
 
+            # Use configured default voice channel; request payload no longer provides it.
+            voice_channel_id = self.settings.voice_channel_id
+            if voice_channel_id is None:
+                raise HTTPException(
+                    status_code=400,
+                    detail="VOICE_CHANNEL_ID is not configured on the bot daemon",
+                )
+
             try:
                 result = await self.discord_logger.notify_voice(
-                    request.voice_channel_id,
+                    voice_channel_id,
                     request.message,
                     request.priority,
                     request.speaker_id,

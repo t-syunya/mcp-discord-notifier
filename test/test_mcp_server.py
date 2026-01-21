@@ -49,20 +49,18 @@ class TestMCPServerModels:
     def test_notify_voice_request_valid(self):
         """Test NotifyVoiceRequest with valid data."""
         request = NotifyVoiceRequest(
-            voice_channel_id=123456789,
             message="Test notification",
             priority="high",
             speaker_id=3,
         )
 
-        assert request.voice_channel_id == 123456789
         assert request.message == "Test notification"
         assert request.priority == "high"
         assert request.speaker_id == 3
 
     def test_notify_voice_request_defaults(self):
         """Test NotifyVoiceRequest uses default values."""
-        request = NotifyVoiceRequest(voice_channel_id=123456789, message="Test")
+        request = NotifyVoiceRequest(message="Test")
 
         assert request.priority == "normal"  # Default
         assert request.speaker_id == 1  # Default
