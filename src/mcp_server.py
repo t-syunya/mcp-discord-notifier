@@ -38,9 +38,6 @@ class WaitForReactionRequest(BaseModel):
 class NotifyVoiceRequest(BaseModel):
     """Request model for notify_voice tool."""
 
-    voice_channel_id: int = Field(
-        description="ID of the voice channel to send notification to"
-    )
     message: str = Field(description="Message to announce in the voice channel")
     priority: str = Field(
         default="normal",
@@ -163,7 +160,6 @@ class ConversationLoggerServer:
                         response = await client.post(
                             f"{self.bot_daemon_url}/notify_voice",
                             json={
-                                "voice_channel_id": request.voice_channel_id,
                                 "message": request.message,
                                 "priority": request.priority,
                                 "speaker_id": request.speaker_id,

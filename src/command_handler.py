@@ -303,10 +303,10 @@ class CommandHandler:
             # Use notify_voice to speak
             try:
                 result = await self.logger.notify_voice(
-                    voice_channel_id=self.logger._voice_client.channel.id,
                     message=text,
                     priority="normal",
                     speaker_id=1,  # Default speaker
+                    voice_channel_id=self.logger._voice_client.channel.id,
                 )
 
                 if result["status"] == "played":
