@@ -261,18 +261,18 @@ class DiscordLogger:
 
     async def notify_voice(
         self,
-        voice_channel_id: Optional[int] = None,
         message: str,
         priority: str = "normal",
         speaker_id: int = 1,
+        voice_channel_id: Optional[int] = None,
     ) -> Dict[str, Any]:
         """Send a voice notification using VoiceVox TTS.
 
         Args:
-            voice_channel_id: ID of the voice channel (overrides configured default if provided)
             message: Message to announce via text-to-speech
             priority: Priority level ("normal" or "high")
             speaker_id: VoiceVox speaker ID (default: 1 = 四国めたん ノーマル)
+            voice_channel_id: ID of the voice channel (overrides configured default if provided)
 
         Returns:
             Dictionary with notification status
@@ -304,7 +304,7 @@ class DiscordLogger:
             )
             embed.set_footer(text=str(e))
             await thread.send(embed=embed)
-            raise
+            return {"status": "not_connected", "note": str(e)}
 
         # Check if VoiceVox is available
         if self._voicevox is None or not await self._voicevox.is_available():

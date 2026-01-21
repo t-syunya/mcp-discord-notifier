@@ -114,10 +114,10 @@ class BotDaemon:
 
             try:
                 result = await self.discord_logger.notify_voice(
-                    voice_channel_id,
-                    request.message,
-                    request.priority,
-                    request.speaker_id,
+                    message=request.message,
+                    priority=request.priority,
+                    speaker_id=request.speaker_id,
+                    voice_channel_id=voice_channel_id,
                 )
                 return {"status": "success", "result": result}
             except Exception as e:
