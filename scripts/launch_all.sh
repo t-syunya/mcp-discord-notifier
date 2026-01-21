@@ -9,6 +9,8 @@ cd "$PROJECT_ROOT"
 RUN_DIR="$PROJECT_ROOT/.run"
 LOG_DIR="$PROJECT_ROOT/.logs"
 UV_CACHE_DIR="$PROJECT_ROOT/.uv-cache"
+VOICEVOX_PID_FILE="$RUN_DIR/voicevox.pid"
+BOT_PID_FILE="$RUN_DIR/bot.pid"
 DOCKER_COMPOSE_BIN=""
 
 mkdir -p "$RUN_DIR" "$LOG_DIR"
@@ -53,14 +55,31 @@ check_env() {
 }
 
 start_voicevox() {
-  detect_compose
-  if [ -z "$DOCKER_COMPOSE_BIN" ]; then
-    warn "docker compose が見つからないため VoiceVox は起動しません（音声通知は失敗します）"
-    return 0
+  # 既存PIDが生きていれば再利用
+  if [ -f "$VOICEVOX_PID_FILE" ]; then
+    local pid
+    pid=$(cat "$VOICEVOX_PID_FILE")
+    if kill -0 "$pid" 2>/dev/null; then
+      log "VoiceVox Engine は既に起動しています (pid=$pid)"
+      return 0
+    fi
   fi
 
-  log "VoiceVox Engine を起動します..."
-  UV_CACHE_DIR="$UV_CACHE_DIR" $DOCKER_COMPOSE_BIN -f "$PROJECT_ROOT/docker-compose.yml" up -d voicevox
+  # VOICEVOX_CMD が指定されていればプロセス起動
+  if [ -n "${VOICEVOX_CMD:-}" ]; then
+    log "VOICEVOX_CMD で VoiceVox を起動します..."
+    nohup bash -lc "$VOICEVOX_CMD" >"$LOG_DIR/voicevox.log" 2>&1 &
+    echo $! >"$VOICEVOX_PID_FILE"
+  else
+    detect_compose
+    if [ -z "$DOCKER_COMPOSE_BIN" ]; then
+      warn "docker compose/VOICEVOX_CMD が無いので VoiceVox は起動しません（音声通知は失敗します）"
+      return 0
+    fi
+
+    log "VoiceVox Engine を docker compose で起動します..."
+    UV_CACHE_DIR="$UV_CACHE_DIR" $DOCKER_COMPOSE_BIN -f "$PROJECT_ROOT/docker-compose.yml" up -d voicevox
+  fi
 
   # 起動確認（30秒待機）
   local try=0
@@ -76,9 +95,23 @@ start_voicevox() {
 }
 
 stop_voicevox() {
-  detect_compose
-  [ -z "$DOCKER_COMPOSE_BIN" ] && return 0
-  UV_CACHE_DIR="$UV_CACHE_DIR" $DOCKER_COMPOSE_BIN -f "$PROJECT_ROOT/docker-compose.yml" stop voicevox >/dev/null 2>&1 || true
+  if [ -f "$VOICEVOX_PID_FILE" ]; then
+    local pid
+    pid=$(cat "$VOICEVOX_PID_FILE")
+    if kill -0 "$pid" 2>/dev/null; then
+      log "VoiceVox Engine (pid=$pid) を停止します..."
+      kill "$pid" 2>/dev/null || true
+      sleep 1
+      kill -0 "$pid" 2>/dev/null && kill -9 "$pid" 2>/dev/null || true
+      log "VoiceVox Engine を停止しました"
+    fi
+    trashp "$VOICEVOX_PID_FILE"
+  else
+    detect_compose
+    if [ -n "$DOCKER_COMPOSE_BIN" ]; then
+      UV_CACHE_DIR="$UV_CACHE_DIR" $DOCKER_COMPOSE_BIN -f "$PROJECT_ROOT/docker-compose.yml" stop voicevox >/dev/null 2>&1 || true
+    fi
+  fi
 }
 
 start_processes() {
@@ -87,35 +120,34 @@ start_processes() {
   command -v ffmpeg >/dev/null 2>&1 || warn "ffmpeg が見つかりません（音声再生に必要です）"
   start_voicevox
 
-  if [ -f "$RUN_DIR/bot.pid" ] && kill -0 "$(cat "$RUN_DIR/bot.pid")" 2>/dev/null; then
-    err "Bot Daemon が既に起動しています (pid=$(cat "$RUN_DIR/bot.pid"))"
+  if [ -f "$BOT_PID_FILE" ] && kill -0 "$(cat "$BOT_PID_FILE")" 2>/dev/null; then
+    err "Bot Daemon が既に起動しています (pid=$(cat "$BOT_PID_FILE"))"
   fi
 
   log "Discord Bot Daemon を起動します..."
   UV_CACHE_DIR="$UV_CACHE_DIR" uv run mcp-discord-bot-daemon >"$LOG_DIR/bot.log" 2>&1 &
-  echo $! >"$RUN_DIR/bot.pid"
+  echo $! >"$BOT_PID_FILE"
 
   log "起動完了: VoiceVox + Bot Daemon（MCPサーバーはこのスクリプトでは起動しません）"
   log "logs=$LOG_DIR, pids=$RUN_DIR"
 }
 
 stop_processes() {
-  for name in bot; do
-    local pidfile="$RUN_DIR/$name.pid"
-    if [ -f "$pidfile" ]; then
-      local pid
-      pid=$(cat "$pidfile")
-      if kill -0 "$pid" 2>/dev/null; then
-        log "$name (pid=$pid) を停止します..."
-        kill "$pid" || true
-      else
-        warn "$name の PID ファイルはありますがプロセスが見つかりません"
-      fi
-      rm -f "$pidfile"
+  if [ -f "$BOT_PID_FILE" ]; then
+    local pid
+    pid=$(cat "$BOT_PID_FILE")
+    if kill -0 "$pid" 2>/dev/null; then
+      log "bot (pid=$pid) を停止します..."
+      kill "$pid" 2>/dev/null || true
+      sleep 1
+      kill -0 "$pid" 2>/dev/null && kill -9 "$pid" 2>/dev/null || true
     else
-      warn "$name の PID ファイルがありません"
+      warn "bot の PID ファイルはありますがプロセスが見つかりません"
     fi
-  done
+    trashp "$BOT_PID_FILE"
+  else
+    warn "bot の PID ファイルがありません"
+  fi
   stop_voicevox
   log "停止完了"
 }
