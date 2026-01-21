@@ -46,7 +46,10 @@ check_env() {
     warn "LOG_CHANNEL_ID が設定されていません"
     missing=1
   fi
-  [ "$missing" -eq 1 ] && err ".env を設定してください（DISCORD_TOKEN, LOG_CHANNEL_ID）"
+  if [ "$missing" -eq 1 ]; then
+    err ".env を設定してください（DISCORD_TOKEN, LOG_CHANNEL_ID）"
+  fi
+  return 0
 }
 
 start_voicevox() {
@@ -87,23 +90,17 @@ start_processes() {
   if [ -f "$RUN_DIR/bot.pid" ] && kill -0 "$(cat "$RUN_DIR/bot.pid")" 2>/dev/null; then
     err "Bot Daemon が既に起動しています (pid=$(cat "$RUN_DIR/bot.pid"))"
   fi
-  if [ -f "$RUN_DIR/mcp.pid" ] && kill -0 "$(cat "$RUN_DIR/mcp.pid")" 2>/dev/null; then
-    err "MCP Server が既に起動しています (pid=$(cat "$RUN_DIR/mcp.pid"))"
-  fi
 
   log "Discord Bot Daemon を起動します..."
   UV_CACHE_DIR="$UV_CACHE_DIR" uv run mcp-discord-bot-daemon >"$LOG_DIR/bot.log" 2>&1 &
   echo $! >"$RUN_DIR/bot.pid"
 
-  log "MCP Server を起動します..."
-  UV_CACHE_DIR="$UV_CACHE_DIR" uv run mcp-discord-notifier --log-thread-name "${LOG_THREAD_NAME:-Conversation Log}" >"$LOG_DIR/mcp.log" 2>&1 &
-  echo $! >"$RUN_DIR/mcp.pid"
-
-  log "起動完了: logs=$LOG_DIR, pids=$RUN_DIR"
+  log "起動完了: VoiceVox + Bot Daemon（MCPサーバーはこのスクリプトでは起動しません）"
+  log "logs=$LOG_DIR, pids=$RUN_DIR"
 }
 
 stop_processes() {
-  for name in bot mcp; do
+  for name in bot; do
     local pidfile="$RUN_DIR/$name.pid"
     if [ -f "$pidfile" ]; then
       local pid
