@@ -105,7 +105,7 @@ stop_voicevox() {
       kill -0 "$pid" 2>/dev/null && kill -9 "$pid" 2>/dev/null || true
       log "VoiceVox Engine を停止しました"
     fi
-    trashp "$VOICEVOX_PID_FILE"
+    rm -f "$VOICEVOX_PID_FILE"
   else
     detect_compose
     if [ -n "$DOCKER_COMPOSE_BIN" ]; then
@@ -144,7 +144,7 @@ stop_processes() {
     else
       warn "bot の PID ファイルはありますがプロセスが見つかりません"
     fi
-    trashp "$BOT_PID_FILE"
+    rm -f "$BOT_PID_FILE"
   else
     warn "bot の PID ファイルがありません"
   fi
